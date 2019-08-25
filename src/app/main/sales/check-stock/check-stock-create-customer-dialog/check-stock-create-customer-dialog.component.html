@@ -13,7 +13,7 @@
             <input matInput type="number" step="1" formControlName="dni" autocomplete="off">
             <mat-progress-bar mode="indeterminate" *ngIf="duplicate.dniLoading">
             </mat-progress-bar>
-            <mat-hint *ngIf="!duplicate.ruc">Requerido *</mat-hint>
+            <mat-hint *ngIf="!duplicate.dni">Requerido *</mat-hint>
             <mat-error *ngIf="!dataFormGroup.valid">DNI requerido *</mat-error>
         </mat-form-field>
 
