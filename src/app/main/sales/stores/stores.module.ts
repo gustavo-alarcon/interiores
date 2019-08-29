@@ -11,6 +11,7 @@ import { StoresChangeStatusConfirmComponent } from './stores-change-status-confi
 import { StoresSellDialogComponent } from './stores-sell-dialog/stores-sell-dialog.component';
 import { StoresCreateWholesaleDialogComponent } from './stores-create-wholesale-dialog/stores-create-wholesale-dialog.component';
 import { StoresCreateCustomerDialogComponent } from './stores-create-customer-dialog/stores-create-customer-dialog.component';
+import { StoresSeparateDialogComponent } from './stores-separate-dialog/stores-separate-dialog.component';
 
 @NgModule({
   declarations: [
@@ -20,7 +21,8 @@ import { StoresCreateCustomerDialogComponent } from './stores-create-customer-di
     StoresChangeStatusConfirmComponent,
     StoresSellDialogComponent,
     StoresCreateWholesaleDialogComponent,
-    StoresCreateCustomerDialogComponent
+    StoresCreateCustomerDialogComponent,
+    StoresSeparateDialogComponent
   ],
   imports: [
     CommonModule,
@@ -52,7 +54,8 @@ import { StoresCreateCustomerDialogComponent } from './stores-create-customer-di
     StoresChangeStatusConfirmComponent,
     StoresSellDialogComponent,
     StoresCreateWholesaleDialogComponent,
-    StoresCreateCustomerDialogComponent
+    StoresCreateCustomerDialogComponent,
+    StoresSeparateDialogComponent
   ]
 })
 export class StoresModule { }

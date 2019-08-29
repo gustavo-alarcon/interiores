@@ -87,18 +87,18 @@ export interface SerialNumber {
     code: string;
     color: string;
     status: string;
+    customer?: Customer | WholesaleCustomer;
+    productionPath?: string;
+    departurePath?: string;
+    cashTransactionPath?: string;
     regDate: number;
-    createdBy: string;
-    createdByUid: string;
-    modifiedBy?: string;
-    modifiedByUid?: string;
+    createdBy: User;
+    modifiedBy?: User;
     modifiedDate?: number;
-    customerDisplayName?: string;
-    customerDocumentNumber?: string;
-    customerDate?: number;
-    takedBy?: string;
-    takedByUid?: string;
-    takedDate?: number;
+    separatedBy?: User;
+    separateDate?: number;
+    soldBy?: User; 
+    saleDate?: number;
 }
 
 export interface Color {
@@ -583,6 +583,7 @@ export interface Transaction {
     originAccount?: string;
     destinationAccount?: string;
     debt?: number;
+    separatePath?: string;
     departurePath?: string;
     productPath?: string;
     lastEditBy: string;
@@ -681,4 +682,22 @@ export interface SalesCounter {
     checkStock: number;
     regDate: number;
     lastUpdate: number;
+}
+
+export interface SeparateProduct {
+    id: string;
+    documentName: string;
+    documentSerial: string;
+    documentCorrelative: number;
+    customer: Customer | WholesaleCustomer;
+    paidImport: number;
+    indebtImport: number;
+    productPath: string;
+    cashTransactionPath: string;
+    createdBy: User;
+    regDate: number;
+    soldBy?: User;
+    saleDate?: number;
+    canceledBy?: User;
+    cancelDate?: number;
 }

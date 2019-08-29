@@ -39,7 +39,7 @@ export class CheckStockSellDialogComponent implements OnInit, OnDestroy {
   filteredDocuments: Observable<Document[]>;
   filteredCustomers: Observable<WholesaleCustomer[] | Customer[]>;
   filteredCash: Observable<Cash[]>;
-  preFilteredCash: Array<Cash> = [];
+  // preFilteredCash: Array<Cash> = [];
 
   destinationAccountRequired: boolean = false;
 
@@ -132,7 +132,6 @@ export class CheckStockSellDialogComponent implements OnInit, OnDestroy {
         .subscribe(res => {
           if (res === 'TRANSFERENCIA') {
             this.destinationAccountRequired = true;
-            console.log('Required');
           } else {
             this.destinationAccountRequired = false;
           }
@@ -145,7 +144,6 @@ export class CheckStockSellDialogComponent implements OnInit, OnDestroy {
         .subscribe(res => {
           if (res) {
             this.destinationAccountRequired = false;
-            console.log('Not Required');
           } else {
             this.destinationAccountRequired = true;
           }
@@ -213,8 +211,8 @@ export class CheckStockSellDialogComponent implements OnInit, OnDestroy {
   }
 
   save(): void {
-    this.loading = true;
     if (this.dataFormGroup.valid) {
+      this.loading = true;
 
       const store = this.dbs.stores.filter(option => option.name === this.data.serial.location);
 
@@ -250,16 +248,24 @@ export class CheckStockSellDialogComponent implements OnInit, OnDestroy {
             .then(doc => {
 
               // ****************** READS AND PRE-SETS ********************
-              // PRODUCT ********
+              // PRODUCT READ ********
               const status = doc.data().status;
 
               if (status === 'Vendido') {
                 this.loading = false;
-                this.snackbar.open(`El número de serie #${this.data.serial.serie} ya fue vendido. Seleccione otro número de serie para continuar con la venta`, 'Cerrar', {
+                this.snackbar.open(`El producto: ${this.data.product.name}#${this.data.serial.serie} ya fue vendido. Seleccione otro número de serie para continuar con la venta`, 'Cerrar', {
                   duration: 10000
                 });
               } else {
-                const newStatus = 'Vendido';
+                // PRODUCT **********
+                const product = {
+                  status: 'Vendido',
+                  customer: this.dataFormGroup.value['customer'],
+                  departurePath: departureReference.path,
+                  cashTransactionPath: cashTransactionReference.path,
+                  soldBy: this.auth.userInteriores,
+                  saleDate: Date.now()
+                };
 
                 // DEPARTURE *********
                 const departure: DepartureProduct = {
@@ -330,7 +336,7 @@ export class CheckStockSellDialogComponent implements OnInit, OnDestroy {
                 }
 
                 // ******************* WRITE OPERATIONS ***********************
-                t.update(productReference.ref, { status: newStatus });
+                t.update(productReference.ref, product);
                 t.set(departureReference, departure);
                 t.set(cashTransactionReference, cashTransaction);
               }

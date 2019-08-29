@@ -4,11 +4,12 @@ import { Product, SerialNumber } from 'src/app/core/types';
 import { MatTableDataSource, MatPaginator, MatSort, MatDialog, MatSnackBar } from '@angular/material';
 import { Subscription, Observable } from 'rxjs';
 import { DatabaseService } from 'src/app/core/database.service';
-import { map } from 'rxjs/operators';
+import { map, debounce, debounceTime } from 'rxjs/operators';
 import { CheckStockSellDialogComponent } from './check-stock-sell-dialog/check-stock-sell-dialog.component';
 import { CheckStockTransferDialogComponent } from './check-stock-transfer-dialog/check-stock-transfer-dialog.component';
 import { AuthService } from 'src/app/core/auth.service';
 import { AngularFirestore } from '@angular/fire/firestore';
+import { CheckStockSeparateDialogComponent } from './check-stock-separate-dialog/check-stock-separate-dialog.component';
 
 @Component({
   selector: 'app-check-stock',
@@ -40,9 +41,7 @@ export class CheckStockComponent implements OnInit {
   constructor(
     public dbs: DatabaseService,
     public auth: AuthService,
-    private af: AngularFirestore,
-    private dialog: MatDialog,
-    private snackbar: MatSnackBar
+    private dialog: MatDialog
   ) { }
 
   ngOnInit() {
@@ -55,7 +54,7 @@ export class CheckStockComponent implements OnInit {
         .pipe(
           map(value => typeof value === 'string' ? value.toLowerCase() : null),
           map(value => value ? this.dbs.finishedProducts.filter(option => {
-            if(option.code && option.name){
+            if (option.code && option.name) {
               return option.code.toLowerCase().includes(value) || option.name.toLowerCase().includes(value);
             }
           }) : this.dbs.finishedProducts)
@@ -72,48 +71,62 @@ export class CheckStockComponent implements OnInit {
 
   searchProduct() {
     this.results = [];
+    this.dataSource.data = this.results;
     this.searching = true;
-    if (typeof this.product.value === 'object') {
-      this.dbs.currentDataStores.subscribe(stores => {
-        this.results = [];
-        stores.forEach(store => {
-          let sub =
-            this.dbs.storesCollection
-              .doc(store.id)
-              .collection('products')
-              .doc(this.product.value['id'])
-              .collection<SerialNumber>('products')
-              .valueChanges()
-              .subscribe(res => {
-                if (res) {
-                  res.forEach(serial => {
-                    if (serial.code === this.product.value['code'] && !(serial.status === 'Vendido')) {
-                      serial['isInFacility'] = false;
-                      this.results.push(serial);
-                      this.dataSource.data = this.results;
-                    }
-                  })
-                }
-              });
-        })
-      })
 
-      this.dbs.finishedProductsCollection
-        .doc(this.product.value['id'])
-        .collection<SerialNumber>('products')
-        .valueChanges()
-        .subscribe(res => {
-          if (res) {
-            res.forEach(serial => {
-              if (serial.code === this.product.value['code'] && !(serial.status === 'Vendido')) {
-                serial['isInFacility'] = true;
-                this.results.push(serial);
+    if (typeof this.product.value === 'object') {
+      this.dbs.currentDataStores
+        .pipe(
+          debounceTime(300)
+        )
+        .subscribe(stores => {
+          this.results = [];
+          stores.forEach(store => {
+            let sub =
+              this.dbs.storesCollection
+                .doc(store.id)
+                .collection('products')
+                .doc(this.product.value['id'])
+                .collection<SerialNumber>('products')
+                .valueChanges()
+                .subscribe(res => {
+                  if (res) {
+
+                    res.forEach(serial => {
+                      if (serial.code === this.product.value['code'] && serial.status !== 'Vendido') {
+                        const temp = this.results.filter(option => (option.code === serial.code) && (option.serie === serial.serie));
+                        if (temp.length === 0) {
+                          serial['isInFacility'] = false;
+                          this.results.push(serial);
+                        }
+                      }
+                    });
+
+                    this.dataSource.data = this.results;
+                  }
+                });
+          });
+
+          this.dbs.finishedProductsCollection
+            .doc(this.product.value['id'])
+            .collection<SerialNumber>('products')
+            .valueChanges()
+            .subscribe(res => {
+              if (res) {
+                res.forEach(serial => {
+                  if (serial.code === this.product.value['code'] && serial.status !== 'Vendido') {
+                    serial['isInFacility'] = true;
+                    this.results.push(serial);
+                  }
+                });
+
                 this.dataSource.data = this.results;
+                this.searching = false;
               }
             })
-          }
         })
-      this.searching = false;
+
+
     }
   }
 
@@ -151,54 +164,17 @@ export class CheckStockComponent implements OnInit {
     });
   }
 
-  takeProduct(serial: SerialNumber): void {
-    if (serial.location !== 'Productos acabados') {
-      let store = this.dbs.stores.filter(option => option.name === serial.location);
-      let serialRef =
-        this.dbs.storesCollection
-          .doc(store[0].id)
-          .collection('products')
-          .doc(serial.productId)
-          .collection('products')
-          .doc(serial.id);
-
-      let transaction =
-        this.af.firestore.runTransaction(t => {
-          return t.get(serialRef.ref)
-            .then(doc => {
-              t.update(doc.ref, {
-                status: 'Separado',
-                takedBy: this.auth.userInteriores.displayName,
-                takedByUid: this.auth.userInteriores.uid,
-                takedDate: Date.now()
-              });
-            })
-            .then(() => {
-              this.snackbar.open(`${serial.name} #${serial.serie} SEPARADO!`, 'Cerrar', {
-                duration: 6000
-              });
-              this.searchProduct();
-            })
-            .catch(err => {
-              this.snackbar.open('Hubo un error separando el producto', 'Cerrar', {
-                duration: 6000
-              });
-              console.log(err);
-            })
-        }).then(() => {
-          this.searchProduct();
-        }).catch(err => {
-          this.snackbar.open('Transaction fails', 'Cerrar', {
-            duration: 6000
-          });
-          console.log(err);
-        })
-    } else {
-      this.snackbar.open('No puede separar un producto de taller, debe hacer una transferencia primero!', 'Cerrar', {
-        duration: 6000
-      });
-    }
-
+  separateProduct(serial: SerialNumber): void {
+    this.dialog.open(CheckStockSeparateDialogComponent, {
+      data: {
+        serial: serial,
+        product: this.product.value
+      }
+    }).afterClosed().subscribe(res => {
+      if (res) {
+        this.searchProduct();
+      }
+    });
   }
 
 }

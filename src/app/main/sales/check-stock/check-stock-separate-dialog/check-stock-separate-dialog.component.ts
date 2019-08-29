@@ -1,22 +1,22 @@
-import { SerialNumber, Product, DepartureProduct, Store, Document, Cash, WholesaleCustomer, Customer } from './../../../../core/types';
-import { Component, OnInit, Inject } from '@angular/core';
+import { Component, OnInit, Inject, OnDestroy } from '@angular/core';
 import { DatabaseService } from 'src/app/core/database.service';
 import { AuthService } from 'src/app/core/auth.service';
-import { FormGroup, FormBuilder, Validators } from '@angular/forms';
-import { MatDialogRef, MAT_DIALOG_DATA, MatSnackBar, MatDialog } from '@angular/material';
-import { debounceTime, map, startWith } from 'rxjs/operators';
+import { MatSnackBar, MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material';
+import { SerialNumber, Product, WholesaleCustomer, Customer, Cash, Document, SeparateProduct } from 'src/app/core/types';
+import { FormGroup, Validators, FormBuilder } from '@angular/forms';
 import { Observable, Subscription } from 'rxjs';
+import { startWith, map, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { isObjectValidator } from 'src/app/core/is-object-validator';
-import { StoresCreateWholesaleDialogComponent } from '../stores-create-wholesale-dialog/stores-create-wholesale-dialog.component';
-import { StoresCreateCustomerDialogComponent } from '../stores-create-customer-dialog/stores-create-customer-dialog.component';
+import { CheckStockCreateCustomerDialogComponent } from '../check-stock-create-customer-dialog/check-stock-create-customer-dialog.component';
+import { CheckStockCreateWholesaleDialogComponent } from '../check-stock-create-wholesale-dialog/check-stock-create-wholesale-dialog.component';
 import { AngularFirestore } from '@angular/fire/firestore';
 
 @Component({
-  selector: 'app-stores-sell-dialog',
-  templateUrl: './stores-sell-dialog.component.html',
+  selector: 'app-check-stock-separate-dialog',
+  templateUrl: './check-stock-separate-dialog.component.html',
   styles: []
 })
-export class StoresSellDialogComponent implements OnInit {
+export class CheckStockSeparateDialogComponent implements OnInit, OnDestroy {
 
   loading: boolean = false;
 
@@ -26,41 +26,38 @@ export class StoresSellDialogComponent implements OnInit {
     'TARJETA VISA',
     'TARJETA MASTERCARD',
     'TARJETA ESTILOS',
-    'EFECTIVO'
+    'EFECTIVO',
+    'TRANSFERENCIA'
+  ]
+
+  destinationAccounts = [
+    'CUENTA SHIRLEY',
+    'CUENTA INTERIORES',
+    'CUENTA FERNANDO'
   ]
 
   filteredDocuments: Observable<Document[]>;
   filteredCustomers: Observable<WholesaleCustomer[] | Customer[]>;
   filteredCash: Observable<Cash[]>;
-  preFilteredCash: Array<Cash> = [];
+  // preFilteredCash: Array<Cash> = [];
+
+  destinationAccountRequired: boolean = false;
 
   subscriptions: Array<Subscription> = [];
 
   constructor(
     public dbs: DatabaseService,
     public auth: AuthService,
+    private fb: FormBuilder,
     private af: AngularFirestore,
-    public fb: FormBuilder,
+    private dialogRef: MatDialogRef<CheckStockSeparateDialogComponent>,
     private dialog: MatDialog,
-    private dialogRef: MatDialogRef<StoresSellDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: { product: Product, store: Store, serial: SerialNumber },
-    private snackbar: MatSnackBar
+    private snackbar: MatSnackBar,
+    @Inject(MAT_DIALOG_DATA) public data: { serial: SerialNumber, product: Product }
   ) { }
 
   ngOnInit() {
     this.createForm();
-
-    this.dataFormGroup.get('price').valueChanges
-      .pipe(
-        debounceTime(1000)
-      )
-      .subscribe(res => {
-        if (res) {
-          let disc = 0;
-          disc = 100 - (res * 100) / this.data.product.sale;
-          this.dataFormGroup.get('discount').setValue(disc.toFixed(2));
-        }
-      });
 
     this.filteredDocuments =
       this.dataFormGroup.get('document').valueChanges
@@ -68,9 +65,7 @@ export class StoresSellDialogComponent implements OnInit {
           startWith<any>(''),
           map(value => typeof value === 'string' ? value.toLowerCase() : value.name.toLowerCase()),
           map(name => name ? this.dbs.documents.filter(option => option.name.toLowerCase().includes(name)) : this.dbs.documents)
-        );
-
-    // this.preFilteredCash = this.dbs.cashList.filter(option => option.location.name === this.data.store.name);
+        )
 
     this.filteredCash =
       this.dataFormGroup.get('cash').valueChanges
@@ -106,17 +101,77 @@ export class StoresSellDialogComponent implements OnInit {
                   startWith<any>(''),
                   map(value => {
                     if (value) {
-                      return typeof value === 'string' ? value.trim().toLowerCase() : value.name.toLowerCase()
+                      return typeof value === 'string' ? value.trim().toLowerCase() : (value.businessName ? value.businessName.toLowerCase() : value.name.toLowerCase())
                     } else {
                       return '';
                     }
                   }),
-                  map(name => name ? this.dbs.customers.filter(option => option.name.toLowerCase().includes(name)) : this.dbs.customers)
+                  map(name => name ? this.dbs.customers.filter(option => (option.businessName ? option.businessName.toLowerCase().includes(name) : false) || (option.name ? option.name.toLowerCase().includes(name) : false)) : this.dbs.customers)
                 )
           }
         });
 
     this.subscriptions.push(customerType$);
+
+    const paymentType$ =
+      this.dataFormGroup.get('paymentType').valueChanges
+        .subscribe(res => {
+          if (res === 'TRANSFERENCIA') {
+            this.destinationAccountRequired = true;
+          } else {
+            this.destinationAccountRequired = false;
+          }
+        });
+
+    this.subscriptions.push(paymentType$);
+
+    const destinationAccount$ =
+      this.dataFormGroup.get('destinationAccount').valueChanges
+        .subscribe(res => {
+          if (res) {
+            this.destinationAccountRequired = false;
+          } else {
+            this.destinationAccountRequired = true;
+          }
+        });
+
+    this.subscriptions.push(destinationAccount$);
+
+    const paidImport$ =
+      this.dataFormGroup.get('paidImport').valueChanges
+        .pipe(
+          debounceTime(300),
+          distinctUntilChanged()
+        )
+        .subscribe(res => {
+          if (res) {
+            if (res < 0) {
+              this.dataFormGroup.get('paidImport').setValue(0);
+              this.snackbar.open('No puede asignar valores negativos', 'Cerrar', {
+                duration: 3000
+              });
+            } else {
+              const total = this.data.product.sale;
+
+              if (res > total) {
+                res = total;
+                this.dataFormGroup.get('paidImport').setValue(res);
+                this.snackbar.open('No puede asignar valores mayores al importe total', 'Cerrar', {
+                  duration: 3000
+                });
+              }
+
+              const indebt = total - res;
+              this.dataFormGroup.get('indebtImport').setValue(parseFloat(indebt.toFixed(2)));
+            }
+          }
+        });
+
+    this.subscriptions.push(paidImport$);
+  }
+
+  ngOnDestroy() {
+    this.subscriptions.forEach(sub => sub.unsubscribe());
   }
 
   createForm(): void {
@@ -126,9 +181,10 @@ export class StoresSellDialogComponent implements OnInit {
       documentCorrelative: [null, [Validators.required]],
       customerType: [null, [Validators.required]],
       customer: [null, [Validators.required, isObjectValidator]],
-      price: [null, [Validators.required]],
-      discount: 0,
+      paidImport: [0, [Validators.required]],
+      indebtImport: [this.data.product.sale, [Validators.required]],
       paymentType: [null, [Validators.required]],
+      destinationAccount: null,
       cash: [null, [Validators.required, isObjectValidator]]
     });
   }
@@ -147,7 +203,6 @@ export class StoresSellDialogComponent implements OnInit {
     } else {
       return null;
     }
-
   }
 
   showCash(cash: Cash): string | null {
@@ -155,7 +210,7 @@ export class StoresSellDialogComponent implements OnInit {
   }
 
   addWholesale(): void {
-    this.dialog.open(StoresCreateWholesaleDialogComponent)
+    this.dialog.open(CheckStockCreateWholesaleDialogComponent)
       .afterClosed().subscribe(res => {
         if (res) {
           this.dataFormGroup.get('customer').setValue(res);
@@ -164,7 +219,7 @@ export class StoresSellDialogComponent implements OnInit {
   }
 
   addCustomer(): void {
-    this.dialog.open(StoresCreateCustomerDialogComponent)
+    this.dialog.open(CheckStockCreateCustomerDialogComponent)
       .afterClosed().subscribe(res => {
         if (res) {
           this.dataFormGroup.get('customer').setValue(res);
@@ -172,7 +227,7 @@ export class StoresSellDialogComponent implements OnInit {
       });
   }
 
-  save(): void {
+  separate(): void {
     if (this.dataFormGroup.valid) {
       this.loading = true;
 
@@ -181,10 +236,10 @@ export class StoresSellDialogComponent implements OnInit {
       /**
        * SETTING REFERENCES
        * -Product
-       * -Departure
+       * -Separate
        * -Cash
        */
-      const productReference =
+      const productDocument =
         this.dbs.storesCollection
           .doc(store[0].id)
           .collection('products')
@@ -192,8 +247,8 @@ export class StoresSellDialogComponent implements OnInit {
           .collection('products')
           .doc(this.data.serial.id);
 
-      const departureReference =
-        this.af.firestore.collection(this.dbs.departuresCollection.ref.path).doc();
+      const separateReference =
+        this.af.firestore.collection(this.dbs.separateProductsCollection.ref.path).doc();
 
       const cashCollection =
         this.dbs.cashListCollection
@@ -206,7 +261,7 @@ export class StoresSellDialogComponent implements OnInit {
 
       try {
         this.af.firestore.runTransaction(t => {
-          return t.get(productReference.ref)
+          return t.get(productDocument.ref)
             .then(doc => {
 
               // ****************** READS AND PRE-SETS ********************
@@ -215,46 +270,37 @@ export class StoresSellDialogComponent implements OnInit {
 
               if (status === 'Vendido') {
                 this.loading = false;
-                this.snackbar.open(`El número de serie #${this.data.serial.serie} ya fue vendido. Seleccione otro número de serie para continuar con la venta`, 'Cerrar', {
+                this.snackbar.open(`El producto: ${this.data.product.name}#${this.data.serial.serie} ya fue vendido. Seleccione otro número de serie para continuar con la venta`, 'Cerrar', {
                   duration: 10000
                 });
               } else {
                 // PRODUCT **********
                 const product = {
-                  status: 'Vendido',
+                  status: 'Separado',
                   customer: this.dataFormGroup.value['customer'],
-                  departurePath: departureReference.path,
+                  separatePath: separateReference.path,
                   cashTransactionPath: cashTransactionReference.path,
-                  soldBy: this.auth.userInteriores,
-                  saleDate: Date.now()
+                  separatedBy: this.auth.userInteriores,
+                  separateDate: Date.now()
                 };
 
-                // DEPARTURE *********
-                const departure: DepartureProduct = {
-                  id: '',
-                  document: this.dataFormGroup.value['document'],
+                // SEPARATE *********
+                const separate: SeparateProduct = {
+                  id: separateReference.id,
+                  documentName: this.dataFormGroup.value['document']['name'],
                   documentSerial: this.dataFormGroup.value['documentSerial'],
                   documentCorrelative: this.dataFormGroup.value['documentCorrelative'],
-                  product: this.data.product,
-                  serie: this.data.serial.serie,
-                  color: this.data.serial.color ? this.data.serial.color : null,
-                  quantity: 1,
-                  price: this.dataFormGroup.value['price'],
-                  discount: (this.dataFormGroup.value['price'] / this.data.product.sale) * 100,
-                  paymentType: this.dataFormGroup.value['paymentType'],
-                  destinationAccount: this.dataFormGroup.value['destinationAccount'],
-                  customerType: this.dataFormGroup.value['customerType'],
                   customer: this.dataFormGroup.value['customer'],
-                  source: 'check stock',
-                  location: this.data.serial.location,
-                  productPath: productReference.ref.path,
+                  paidImport: this.dataFormGroup.value['paidImport'],
+                  indebtImport: this.dataFormGroup.value['indebtImport'],
+                  productPath: productDocument.ref.path,
                   cashTransactionPath: cashTransactionReference.path,
+                  createdBy: this.auth.userInteriores,
                   regDate: Date.now(),
-                  createdBy: this.auth.userInteriores.displayName,
-                  createdByUid: this.auth.userInteriores.uid,
-                  canceledBy: '',
-                  canceldByUid: '',
-                  canceledDate: null
+                  soldBy: null,
+                  saleDate: null,
+                  canceledBy: null,
+                  cancelDate: null
                 }
 
                 // CASH TRANSACTION **********
@@ -269,26 +315,25 @@ export class StoresSellDialogComponent implements OnInit {
                 const cashTransaction = {
                   id: '',
                   regDate: Date.now(),
-                  type: 'VENTA',
+                  type: 'SEPARADO',
                   description: this.dataFormGroup.value['document']['name']
                     + ', Serie ' + this.dataFormGroup.value['documentSerial']
                     + ', Correlativo ' + this.dataFormGroup.value['documentCorrelative']
                     + ', Producto ' + this.data.serial.name + '#' + this.data.serial.serie
-                    + ', Cliente ' + customerName
-                    + ', Dsct.  ' + this.dataFormGroup.value['discount'] + '%',
-                  import: this.dataFormGroup.value['price'],
+                    + ', Cliente ' + customerName,
+                  import: this.dataFormGroup.value['paidImport'],
                   user: this.auth.userInteriores,
                   verified: false,
                   status: 'Grabado',
-                  ticketType: 'VENTA',
+                  ticketType: 'SEPARADO',
                   paymentType: this.dataFormGroup.value['paymentType'],
                   expenseType: null,
                   departureType: null,
                   originAccount: null,
                   destinationAccount: this.dataFormGroup.value['destinationAccount'],
-                  debt: 0,
-                  departurePath: departureReference.path,
-                  productPath: productReference.ref.path,
+                  debt: this.dataFormGroup.value['indebtImport'],
+                  separatePath: separateReference.path,
+                  productPath: productDocument.ref.path,
                   lastEditBy: null,
                   lastEditUid: null,
                   lastEditDate: null,
@@ -298,14 +343,14 @@ export class StoresSellDialogComponent implements OnInit {
                 }
 
                 // ******************* WRITE OPERATIONS ***********************
-                t.update(productReference.ref, product);
-                t.set(departureReference, departure);
+                t.update(productDocument.ref, product);
+                t.set(separateReference, separate);
                 t.set(cashTransactionReference, cashTransaction);
               }
             })
             .then(() => {
               this.loading = false;
-              this.snackbar.open(`${this.data.serial.name} #${this.data.serial.serie} vendido!`, 'Cerrar', {
+              this.snackbar.open(`${this.data.serial.name} #${this.data.serial.serie} separado!`, 'Cerrar', {
                 duration: 6000
               });
               this.dialogRef.close(true);
@@ -321,12 +366,11 @@ export class StoresSellDialogComponent implements OnInit {
       } catch (err) {
         this.loading = false;
         console.log(err);
-        this.snackbar.open(`Ups!...parece que hubo un error, vuelva a preseionar el botón VENDER`, 'Cerrar', {
+        this.snackbar.open(`Ups!...parece que hubo un error, vuelva a preseionar el botón SEPARAR`, 'Cerrar', {
           duration: 6000
         });
       }
     }
-
   }
 
 }

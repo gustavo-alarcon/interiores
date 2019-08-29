@@ -20,10 +20,10 @@ export class StoresChangeStatusConfirmComponent implements OnInit {
     'Acabado',
     'Exhibición',
     'Mantenimiento',
-    'Separado',
-    'Vendido',
+    // 'Separado',
+    // 'Vendido',
     'Garantía',
-    'Concesión'
+    'Consignacion'
   ]
 
   constructor(

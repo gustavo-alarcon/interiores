@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { AngularFirestore, AngularFirestoreDocument, AngularFirestoreCollection } from "@angular/fire/firestore";
-import { Requirement, Correlative, Product, Color, RawMaterial, Category, Unit, ProductionOrder, TicketRawMaterial, DepartureRawMaterial, Store, User, Transfer, DepartureProduct, Quotation, Document, Cash, Purchase, Provider, WholesaleCustomer, Customer, SystemActivityEvent, SalesCounter } from './types';
+import { Requirement, Correlative, Product, Color, RawMaterial, Category, Unit, ProductionOrder, TicketRawMaterial, DepartureRawMaterial, Store, User, Transfer, DepartureProduct, Quotation, Document, Cash, Purchase, Provider, WholesaleCustomer, Customer, SystemActivityEvent, SalesCounter, SeparateProduct } from './types';
 import { BehaviorSubject } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { AuthService } from './auth.service';
@@ -254,6 +254,15 @@ export class DatabaseService {
   public currentDataCustomers = this.dataCustomers.asObservable();
 
   /**
+   * SEPARATE PRODUCTS
+   */
+  separateProductsCollection: AngularFirestoreCollection<SeparateProduct>;
+  separateProducts: Array<SeparateProduct> = [];
+
+  public dataSeparateProducts = new BehaviorSubject<SeparateProduct[]>([]);
+  public currentDataSeparateProducts = this.dataSeparateProducts.asObservable();
+
+  /**
    * RELEASE NOTES
    */
   releaseNotesDocument: AngularFirestoreDocument<any>;
@@ -271,13 +280,16 @@ export class DatabaseService {
   public dataSystemActivityLogs = new BehaviorSubject<SystemActivityEvent[]>([]);
   public currentDataSystemActivityLogs = this.dataSystemActivityLogs.asObservable();
 
-  
+  /**
+   * SYSTEM ACTIVITY SALES COUNTERS
+   */
+
   systemActivityCounterSalesDocument: AngularFirestoreDocument<SalesCounter>;
   systemActivityCounterSales: SalesCounter = null;
 
   public dataSystemActivityCounterSales = new BehaviorSubject<SalesCounter>(null);
   public currentDataSystemActivityCounterSales = this.dataSystemActivityCounterSales.asObservable();
-  
+
 
 
   constructor(
@@ -320,6 +332,7 @@ export class DatabaseService {
         this.getQuotations(from, to);
         this.getQuotationsCorrelative();
         this.getStores();
+        this.getSeparateProducts();
         this.getRawMaterials();
         this.getCategories();
         this.getUnits();
@@ -561,6 +574,31 @@ export class DatabaseService {
         this.stores = res;
         this.dataStores.next(res);
       });
+  }
+
+  getSeparateProducts(): void {
+    this.separateProductsCollection = this.af.collection(`db/${this.auth.userInteriores.db}/separateProducts`);
+    this.separateProductsCollection.valueChanges()
+      .pipe(
+        map(res => {
+          // order result from newer to oldest
+          return res.sort((a, b) => b['regDate'] - a['regDate']);
+        }),
+        map(res => {
+          // adding inverse index number, first item will have
+          // the total lenght number of the array.
+          res.forEach((element, index) => {
+            element['index'] = res.length - index;
+          });
+          return res;
+        })
+      )
+      .subscribe(res => {
+        if (res) {
+          this.separateProducts = res;
+          this.dataSeparateProducts.next(res);
+        }
+      })
   }
 
   // *************************************** PRODUCTION *****************************************
@@ -889,26 +927,26 @@ export class DatabaseService {
 
   /************************************ REPORTS ********************************/
 
-  getSystemActivityLogs(from: number, to:number): void {
-    this.systemActivityLogsCollection = this.af.collection(`db/${this.auth.userInteriores.db}/systemActivityLogs`, ref => ref.where('regDate','>=',from).where('regDate', '<=', to));
+  getSystemActivityLogs(from: number, to: number): void {
+    this.systemActivityLogsCollection = this.af.collection(`db/${this.auth.userInteriores.db}/systemActivityLogs`, ref => ref.where('regDate', '>=', from).where('regDate', '<=', to));
     this.systemActivityLogsCollection.valueChanges()
-    .pipe(
-      map(res => {
-        return res.sort((a, b) => b['regDate'] - a['regDate']);
-      }),
-      map(res => {
-        res.forEach((element, index) => {
-          element['index'] = res.length - index;
-        });
-        return res;
+      .pipe(
+        map(res => {
+          return res.sort((a, b) => b['regDate'] - a['regDate']);
+        }),
+        map(res => {
+          res.forEach((element, index) => {
+            element['index'] = res.length - index;
+          });
+          return res;
+        })
+      )
+      .subscribe(res => {
+        if (res) {
+          this.systemActivityLogs = res;
+          this.dataSystemActivityLogs.next(res);
+        }
       })
-    )
-    .subscribe(res => {
-      if(res){
-        this.systemActivityLogs = res;
-        this.dataSystemActivityLogs.next(res);
-      }
-    })
   }
 
   getSystemActivityCounterSales(): void {

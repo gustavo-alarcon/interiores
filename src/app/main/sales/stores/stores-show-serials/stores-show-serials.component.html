@@ -40,8 +40,11 @@
                             <button mat-menu-item (click)="sellSerial(raw)" [disabled]="raw.status === 'Traslado' || raw.status === 'Vendido'">
                                 <mat-icon class="ms-icons-color">shopping_cart</mat-icon> Vender
                             </button>
+                            <button mat-menu-item (click)="separateProduct(raw)" [disabled]="raw.isInFacility || raw.status === 'Separado' || raw.status === 'Traslado'">
+                                <mat-icon class="ms-icons-color">loyalty</mat-icon> Separar
+                            </button>
                         </mat-menu>
-                        <button mat-icon-button [matMenuTriggerFor]="rawMenu">
+                        <button mat-icon-button [matMenuTriggerFor]="rawMenu" [disabled]="raw.status === 'Traslado'">
                             <mat-icon>more_vert</mat-icon>
                         </button>
                     </td>

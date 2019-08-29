@@ -6,6 +6,7 @@ import { DatabaseService } from 'src/app/core/database.service';
 import { Product, SerialNumber, Store } from 'src/app/core/types';
 import { StoresChangeStatusConfirmComponent } from '../stores-change-status-confirm/stores-change-status-confirm.component';
 import { StoresSellDialogComponent } from '../stores-sell-dialog/stores-sell-dialog.component';
+import { StoresSeparateDialogComponent } from '../stores-separate-dialog/stores-separate-dialog.component';
 
 @Component({
   selector: 'app-stores-show-serials',
@@ -69,6 +70,15 @@ export class StoresShowSerialsComponent implements OnInit, OnDestroy {
         product: this.data.product,
         store: this.data.store,
         serial: serial
+      }
+    });
+  }
+
+  separateProduct(serial: SerialNumber): void {
+    this.dialog.open(StoresSeparateDialogComponent, {
+      data: {
+        serial: serial,
+        product: this.data.product
       }
     });
   }
