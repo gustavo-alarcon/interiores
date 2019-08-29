@@ -1,4 +1,6 @@
 import { Component, OnInit } from '@angular/core';
+import { DatabaseService } from 'src/app/core/database.service';
+import { DomSanitizer } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-menu-show-release-notes-dialog',
@@ -7,9 +9,20 @@ import { Component, OnInit } from '@angular/core';
 })
 export class MenuShowReleaseNotesDialogComponent implements OnInit {
 
-  constructor() { }
+  releaseURL: any = '';
+
+  constructor(
+    public dbs: DatabaseService,
+    public sanitizer: DomSanitizer
+  ) { }
 
   ngOnInit() {
+    this.dbs.currentDataReleaseNotes
+      .subscribe(res => {
+        if (res) {
+          this.releaseURL = this.sanitizer.bypassSecurityTrustResourceUrl(res)
+        }
+      })
   }
 
 }

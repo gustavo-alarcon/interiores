@@ -72,7 +72,10 @@
                             </mat-option>
 
                             <mat-option *ngFor="let item of filteredCustomers | async" [value]="item">
-                                {{dataFormGroup.value['customerType'] === 'MAYORISTA' ? (item.businessName ? item.businessName : (item.name + (item.lastname ? (' ' + item.lastname) : '')) ) : item.name}}
+                                <mat-icon>
+                                    {{item.businessName ? 'domain' : 'account_circle'}}
+                                </mat-icon>
+                                {{dataFormGroup.value['customerType'] === 'MAYORISTA' ? (item.businessName ? item.businessName : (item.name + (item.lastname ? (' ' + item.lastname) : '')) ) : (item.businessName ? item.businessName : item.name)}}
                             </mat-option>
                         </mat-autocomplete>
                         <mat-hint>Requerido *</mat-hint>
@@ -151,6 +154,17 @@
                         <mat-hint>Requerido *</mat-hint>
                     </mat-form-field><br>
 
+                    <mat-form-field class="w3-margin-bottom w3-block animated fadeInRight" appearance="outline"
+                        *ngIf="dataFormGroup.value['paymentType'] === 'TRANSFERENCIA'">
+                        <mat-label>Cuenta de destino</mat-label>
+                        <mat-select formControlName="destinationAccount" placeholder="Seleccione...">
+                            <mat-option *ngFor="let option of destinationAccounts" [value]="option">
+                                {{option}}
+                            </mat-option>
+                        </mat-select>
+                        <mat-hint>Requerido *</mat-hint>
+                    </mat-form-field><br>
+
                     <mat-form-field class="w3-margin-bottom w3-block" appearance="outline">
                         <mat-label>Caja destino</mat-label>
                         <mat-icon matSuffix>arrow_drop_down</mat-icon>
@@ -175,5 +189,5 @@
 <mat-dialog-actions align="end">
     <button mat-stroked-button class="w3-margin-right" color="warn" mat-dialog-close>Cancelar</button>
     <button mat-raised-button class="w3-margin-right" color="primary" (click)="save()"
-        [disabled]="!dataFormGroup.valid || loading">Vender</button>
+        [disabled]="!dataFormGroup.valid || destinationAccountRequired|| loading">Vender</button>
 </mat-dialog-actions>

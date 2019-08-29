@@ -369,10 +369,13 @@ export interface DepartureProduct {
     price: number;
     discount: number;
     paymentType: string;
+    destinationAccount?: string;
     location?: string | Store;
     customerType?: string;
     customer?: WholesaleCustomer | Customer;
     source: string;
+    productPath?: string;
+    cashTransactionPath?: string; 
     regDate: number;
     createdBy: string;
     createdByUid: string;
@@ -474,12 +477,24 @@ export interface WholesaleCustomer {
 
 export interface Customer {
     id: string;
-    name: string;
-    dni: number;
+    type: string;
+    name?: string;
+    lastname?: string;
+    displayName?: string;
     address?: string;
+    dni?: number;
     phone?: string;
     mail?: string;
     creditNote?: CreditNote;
+    businessName?: string;
+    businessAddress?: string;
+    ruc?: number;
+    businessPhone?: string;
+    contacts?: Array<{
+        contanctName?: string;
+        contactPhone?: string;
+        contactMail?: string;
+    }>;
     regDate: number;
     createdBy: User;
     editedBy?: User | null;
@@ -566,7 +581,10 @@ export interface Transaction {
     expenseType?: string;
     departureType?: string;
     originAccount?: string;
+    destinationAccount?: string;
     debt?: number;
+    departurePath?: string;
+    productPath?: string;
     lastEditBy: string;
     lastEditUid: string;
     lastEditDate: number;
@@ -642,4 +660,25 @@ export interface Purchase {
     verifiedBy: string;
     verifiedByUid: string;
     verifiedDate: number;
+}
+
+export interface SystemActivityEvent {
+    id: string;
+    event: string;
+    description: string;
+    module: string;
+    section: string;
+    regDate: number;
+    createdBy: User;
+}
+
+export interface SalesCounter {
+    id: string;
+    requirements: number;
+    orders: number;
+    quotations: number;
+    stores: number;
+    checkStock: number;
+    regDate: number;
+    lastUpdate: number;
 }

@@ -56,41 +56,51 @@
                             </ng-container>
 
                             <ng-container matColumnDef="name">
-                                <th mat-header-cell style="padding:0px 8px" *matHeaderCellDef>Nombre</th>
+                                <th mat-header-cell style="padding:0px 8px" *matHeaderCellDef>Nombre/Empresa</th>
                                 <td mat-cell style="padding:0px 8px; min-width: 250px" *matCellDef="let raw">
                                     <button mat-button disabled class="ms-color-11">
                                         <mat-icon style="vertical-align: middle; margin-right: 8px">
-                                            account_circle</mat-icon>
-                                        {{raw.name ? raw.name : '---'}}
+                                            {{raw.type === 'EMPRESA' ? 'domain' : 'account_circle'}}</mat-icon>
+                                        {{raw.name ? raw.name : raw.businessName}}
                                     </button>
                                 </td>
                             </ng-container>
 
                             <ng-container matColumnDef="dni">
-                                <th mat-header-cell style="padding:0px 8px" *matHeaderCellDef>DNI</th>
+                                <th mat-header-cell style="padding:0px 8px" *matHeaderCellDef>DNI/RUC</th>
                                 <td mat-cell style="padding:0px 8px" *matCellDef="let raw">
-                                    {{raw.dni ? raw.dni : '---'}}
+                                    {{raw.ruc ? raw.ruc : raw.dni}}
                                 </td>
                             </ng-container>
 
                             <ng-container matColumnDef="address">
                                 <th mat-header-cell style="padding:0px 8px" *matHeaderCellDef>Dirección</th>
                                 <td mat-cell style="padding:0px 8px; min-width:300px" *matCellDef="let raw">
-                                    {{raw.address ? raw.address : '---'}}
+                                    {{raw.businessAddress ? raw.businessAddress : raw.address}}
                                 </td>
                             </ng-container>
 
                             <ng-container matColumnDef="phone">
                                 <th mat-header-cell style="padding:0px 8px" *matHeaderCellDef>Teléfono</th>
                                 <td mat-cell style="padding:0px 8px" *matCellDef="let raw">
-                                    {{raw.phone ? raw.phone : '---'}}
+                                    {{raw.businessPhone ? raw.businessPhone : raw.phone}}
                                 </td>
                             </ng-container>
 
                             <ng-container matColumnDef="mail">
                                 <th mat-header-cell style="padding:0px 8px" *matHeaderCellDef>Correo</th>
                                 <td mat-cell style="padding:0px 8px" *matCellDef="let raw">
-                                    {{raw.mail ? raw.mail : '---'}}
+                                    {{raw.businessMail ? '---' : raw.mail}}
+                                </td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="contact">
+                                <th mat-header-cell style="padding:0px 8px" *matHeaderCellDef>Contactos</th>
+                                <td mat-cell style="padding:0px 8px" *matCellDef="let raw">
+                                    <button mat-raised-button color="primary" (click)="openContactList(raw)"
+                                        [disabled]="raw.type === 'NATURAL' || (raw.contacts ? (!raw.contacts.length) : true)">
+                                        <mat-icon>contacts</mat-icon> Contactos
+                                    </button>
                                 </td>
                             </ng-container>
 
@@ -120,11 +130,11 @@
                                 <th mat-header-cell style="padding:0px 8px" *matHeaderCellDef>Acciones</th>
                                 <td mat-cell style="padding:0px 8px" *matCellDef="let raw">
                                     <mat-menu #rawMenu="matMenu">
-                                        <button mat-menu-item (click)="editCustomer(raw)"
+                                        <button mat-menu-item (click)="editWholesaleCustomer(raw)"
                                             [disabled]="thirdPartiesEditAction">
                                             <mat-icon class="ms-icons-color">edit</mat-icon> Editar
                                         </button>
-                                        <button mat-menu-item (click)="deleteCustomer(raw)"
+                                        <button mat-menu-item (click)="deleteWholesaleCustomer(raw)"
                                             [disabled]="thirdPartiesDeleteAction">
                                             <mat-icon class="ms-icons-color">delete</mat-icon> Borrar
                                         </button>

@@ -32,7 +32,7 @@ export class ActualCashComponent implements OnInit, OnDestroy {
   filteredTransactions: Array<Transaction> = [];
   referenceTransactions: Array<Transaction> = [];
 
-  displayedColumns: string[] = ['index', 'regDate', 'type', 'description', 'import', 'verified', 'user', 'paymentType', 'originAccount', 'debt', 'approvedBy', 'actions'];
+  displayedColumns: string[] = ['index', 'regDate', 'type', 'description', 'import', 'verified', 'user', 'paymentType', 'destinationAccount', 'originAccount', 'debt', 'approvedBy', 'actions'];
   dataSource = new MatTableDataSource();
 
   @ViewChild(MatPaginator, { static: true }) paginator: MatPaginator;

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { AngularFirestore, AngularFirestoreDocument, AngularFirestoreCollection } from "@angular/fire/firestore";
-import { Requirement, Correlative, Product, Color, RawMaterial, Category, Unit, ProductionOrder, TicketRawMaterial, DepartureRawMaterial, Store, User, Transfer, DepartureProduct, Quotation, Document, Cash, Purchase, Provider, WholesaleCustomer, Customer } from './types';
+import { Requirement, Correlative, Product, Color, RawMaterial, Category, Unit, ProductionOrder, TicketRawMaterial, DepartureRawMaterial, Store, User, Transfer, DepartureProduct, Quotation, Document, Cash, Purchase, Provider, WholesaleCustomer, Customer, SystemActivityEvent, SalesCounter } from './types';
 import { BehaviorSubject } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { AuthService } from './auth.service';
@@ -262,7 +262,22 @@ export class DatabaseService {
   public dataReleaseNotes = new BehaviorSubject<any>('');
   public currentDataReleaseNotes = this.dataReleaseNotes.asObservable();
 
+  /**
+   * SYSTEM ACTIVITY LOGS
+   */
+  systemActivityLogsCollection: AngularFirestoreCollection<SystemActivityEvent>;
+  systemActivityLogs: Array<SystemActivityEvent> = [];
 
+  public dataSystemActivityLogs = new BehaviorSubject<SystemActivityEvent[]>([]);
+  public currentDataSystemActivityLogs = this.dataSystemActivityLogs.asObservable();
+
+  
+  systemActivityCounterSalesDocument: AngularFirestoreDocument<SalesCounter>;
+  systemActivityCounterSales: SalesCounter = null;
+
+  public dataSystemActivityCounterSales = new BehaviorSubject<SalesCounter>(null);
+  public currentDataSystemActivityCounterSales = this.dataSystemActivityCounterSales.asObservable();
+  
 
 
   constructor(
@@ -274,6 +289,8 @@ export class DatabaseService {
     let fromMonth = date.getMonth();
     let fromYear = date.getFullYear();
 
+    /**MONTH */
+
     let from = new Date(fromYear, fromMonth, 1).valueOf();
 
     let toMonth = (fromMonth + 1) % 12;
@@ -284,6 +301,11 @@ export class DatabaseService {
     }
 
     let to = new Date(toYear, toMonth, 1).valueOf();
+
+    /**DAY */
+
+    let fromDay = new Date(fromYear, fromMonth, date.getDate()).getTime();
+    let toDay = fromDay + 86400000;
 
     this.auth.currentDataPermit.subscribe(res => {
       if (res.name) {
@@ -315,6 +337,9 @@ export class DatabaseService {
         this.getProviders();
         this.getWholesaleCustomers();
         this.getCustomers();
+
+        this.getSystemActivityLogs(fromDay, toDay);
+        this.getSystemActivityCounterSales();
       }
     })
 
@@ -859,6 +884,39 @@ export class DatabaseService {
       .subscribe(res => {
         this.customers = res;
         this.dataCustomers.next(res);
+      })
+  }
+
+  /************************************ REPORTS ********************************/
+
+  getSystemActivityLogs(from: number, to:number): void {
+    this.systemActivityLogsCollection = this.af.collection(`db/${this.auth.userInteriores.db}/systemActivityLogs`, ref => ref.where('regDate','>=',from).where('regDate', '<=', to));
+    this.systemActivityLogsCollection.valueChanges()
+    .pipe(
+      map(res => {
+        return res.sort((a, b) => b['regDate'] - a['regDate']);
+      }),
+      map(res => {
+        res.forEach((element, index) => {
+          element['index'] = res.length - index;
+        });
+        return res;
+      })
+    )
+    .subscribe(res => {
+      if(res){
+        this.systemActivityLogs = res;
+        this.dataSystemActivityLogs.next(res);
+      }
+    })
+  }
+
+  getSystemActivityCounterSales(): void {
+    this.systemActivityCounterSalesDocument = this.af.doc(`db/${this.auth.userInteriores.db}/systemActivityCounters/sales`);
+    this.systemActivityCounterSalesDocument.valueChanges()
+      .subscribe(res => {
+        this.systemActivityCounterSales = res;
+        this.dataSystemActivityCounterSales.next(res);
       })
   }
 

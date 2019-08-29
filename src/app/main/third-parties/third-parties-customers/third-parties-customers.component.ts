@@ -8,6 +8,7 @@ import { Customer } from 'src/app/core/types';
 import { ThirdPartiesCustomersCreateDialogComponent } from './third-parties-customers-create-dialog/third-parties-customers-create-dialog.component';
 import { ThirdPartiesCustomersEditDialogComponent } from './third-parties-customers-edit-dialog/third-parties-customers-edit-dialog.component';
 import { ThirdPartiesCustomersDeleteConfirmComponent } from './third-parties-customers-delete-confirm/third-parties-customers-delete-confirm.component';
+import { ThirdPartiesCustomersContactsDialogComponent } from './third-parties-customers-contacts-dialog/third-parties-customers-contacts-dialog.component';
 
 @Component({
   selector: 'app-third-parties-customers',
@@ -20,7 +21,7 @@ export class ThirdPartiesCustomersComponent implements OnInit {
 
   filteredCustomers: Array<Customer> = [];
 
-  displayedColumns: string[] = ['index', 'name', 'dni', 'address', 'phone', 'mail', 'createdBy','editedBy', 'actions'];
+  displayedColumns: string[] = ['index', 'name', 'dni', 'phone', 'mail', 'contact', 'createdBy','editedBy', 'actions'];
 
 
   dataSource = new MatTableDataSource();
@@ -53,6 +54,14 @@ export class ThirdPartiesCustomersComponent implements OnInit {
 
   filterData(ref: string): void {
     this.dataSource.filter = ref.trim().toLowerCase();
+  }
+
+  openContactList(customer: Customer): void {
+    this.dialog.open(ThirdPartiesCustomersContactsDialogComponent, {
+      data: {
+        customer: customer
+      }
+    });
   }
 
   createCustomer(): void {

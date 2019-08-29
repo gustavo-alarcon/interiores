@@ -178,6 +178,14 @@
                                 <td mat-footer-cell *matFooterCellDef></td>
                             </ng-container>
 
+                            <ng-container matColumnDef="destinationAccount">
+                                <th mat-header-cell style="padding:0px 8px" *matHeaderCellDef>Cuenta de destino<br><small>(TRANSFERENCIA)</small></th>
+                                <td mat-cell style="padding:0px 8px" *matCellDef="let raw">
+                                    {{raw.destinationAccount ? raw.destinationAccount : '---'}}
+                                </td>
+                                <td mat-footer-cell *matFooterCellDef></td>
+                            </ng-container>
+
                             <ng-container matColumnDef="originAccount">
                                 <th mat-header-cell style="padding:0px 8px" *matHeaderCellDef>Cuenta de origen<br><small>(TRANSFERENCIA)</small></th>
                                 <td mat-cell style="padding:0px 8px" *matCellDef="let raw">
