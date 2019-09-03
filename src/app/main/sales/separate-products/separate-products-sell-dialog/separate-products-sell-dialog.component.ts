@@ -1,7 +1,7 @@
 import { Component, OnInit, Inject, OnDestroy } from '@angular/core';
 import { FormGroup, FormBuilder, Validators } from '@angular/forms';
 import { Observable, Subscription } from 'rxjs';
-import { Cash, SerialNumber, Product, Document, SeparateProduct, DepartureProduct } from 'src/app/core/types';
+import { Cash, SerialNumber, Product, Document, SeparateProduct, Departure } from 'src/app/core/types';
 import { DatabaseService } from 'src/app/core/database.service';
 import { AuthService } from 'src/app/core/auth.service';
 import { AngularFirestore } from '@angular/fire/firestore';
@@ -197,7 +197,7 @@ export class SeparateProductsSellDialogComponent implements OnInit, OnDestroy {
                 };
 
                 // DEPARTURE *********
-                const departure: DepartureProduct = {
+                const departure: Departure = {
                   id: '',
                   document: this.dataFormGroup.value['document'],
                   documentSerial: this.dataFormGroup.value['documentSerial'],

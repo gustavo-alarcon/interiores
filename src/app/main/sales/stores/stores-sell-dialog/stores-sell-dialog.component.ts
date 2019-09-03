@@ -1,4 +1,4 @@
-import { SerialNumber, Product, DepartureProduct, Store, Document, Cash, WholesaleCustomer, Customer } from './../../../../core/types';
+import { SerialNumber, Product, Departure, Store, Document, Cash, WholesaleCustomer, Customer } from './../../../../core/types';
 import { Component, OnInit, Inject } from '@angular/core';
 import { DatabaseService } from 'src/app/core/database.service';
 import { AuthService } from 'src/app/core/auth.service';
@@ -230,7 +230,7 @@ export class StoresSellDialogComponent implements OnInit {
                 };
 
                 // DEPARTURE *********
-                const departure: DepartureProduct = {
+                const departure: Departure = {
                   id: '',
                   document: this.dataFormGroup.value['document'],
                   documentSerial: this.dataFormGroup.value['documentSerial'],
@@ -240,7 +240,7 @@ export class StoresSellDialogComponent implements OnInit {
                   color: this.data.serial.color ? this.data.serial.color : null,
                   quantity: 1,
                   price: this.dataFormGroup.value['price'],
-                  discount: (this.dataFormGroup.value['price'] / this.data.product.sale) * 100,
+                  discount: this.dataFormGroup.value['discount'],
                   paymentType: this.dataFormGroup.value['paymentType'],
                   destinationAccount: this.dataFormGroup.value['destinationAccount'],
                   customerType: this.dataFormGroup.value['customerType'],

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { AngularFirestore, AngularFirestoreDocument, AngularFirestoreCollection } from "@angular/fire/firestore";
-import { Requirement, Correlative, Product, Color, RawMaterial, Category, Unit, ProductionOrder, TicketRawMaterial, DepartureRawMaterial, Store, User, Transfer, DepartureProduct, Quotation, Document, Cash, Purchase, Provider, WholesaleCustomer, Customer, SystemActivityEvent, SalesCounter, SeparateProduct, CreditNote } from './types';
+import { Requirement, Correlative, Product, Color, RawMaterial, Category, Unit, ProductionOrder, TicketRawMaterial, Store, User, Transfer, Quotation, Document, Cash, Purchase, Provider, WholesaleCustomer, Customer, SystemActivityEvent, SalesCounter, SeparateProduct, CreditNote, Departure } from './types';
 import { BehaviorSubject } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { AuthService } from './auth.service';
@@ -173,12 +173,12 @@ export class DatabaseService {
   public currentDataTickets = this.dataTickets.asObservable();
 
   /**
-   * DEPARTURES
+   * DEPARTURE
    */
-  departuresCollection: AngularFirestoreCollection<DepartureRawMaterial | DepartureProduct>;
-  departures: Array<DepartureRawMaterial | DepartureProduct> = [];
+  departuresCollection: AngularFirestoreCollection<Departure>;
+  departures: Array<Departure> = [];
 
-  public dataDepartures = new BehaviorSubject<(DepartureRawMaterial | DepartureProduct)[]>([]);
+  public dataDepartures = new BehaviorSubject<Departure[]>([]);
   public currentDataDepartures = this.dataDepartures.asObservable();
 
   /**
@@ -703,7 +703,7 @@ export class DatabaseService {
       .pipe(
         map(res => {
           res.forEach((element, index) => {
-            element['index'] = index;
+            element['index'] = res.length - index;
           });
           return res;
         })

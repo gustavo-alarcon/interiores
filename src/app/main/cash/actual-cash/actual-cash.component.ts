@@ -1,6 +1,6 @@
 import { Component, OnInit, ViewChild, OnDestroy } from '@angular/core';
 import { FormControl } from '@angular/forms';
-import { TicketProduct, TicketRawMaterial, DepartureProduct, DepartureRawMaterial, Transaction, CurrentCash } from 'src/app/core/types';
+import { TicketProduct, TicketRawMaterial, Transaction, CurrentCash } from 'src/app/core/types';
 import { MatTableDataSource, MatPaginator, MatSort, MatDialog, MatSnackBar } from '@angular/material';
 import { Subscription } from 'rxjs';
 import { DatabaseService } from 'src/app/core/database.service';
@@ -28,7 +28,6 @@ export class ActualCashComponent implements OnInit, OnDestroy {
 
   disableTooltips = new FormControl(false);
 
-  filteredOperations: Array<TicketProduct | TicketRawMaterial | DepartureProduct | DepartureRawMaterial> = [];
   filteredTransactions: Array<Transaction> = [];
   referenceTransactions: Array<Transaction> = [];
 

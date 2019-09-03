@@ -1,1 +1,175 @@
-<p>reports-sales works!</p>
+<div style="min-height:100vh; background:rgba(230, 230, 250, 0.5)">
+    <div class="animated fadeInUpBig w3-margin-bottom" style="padding:16px">
+        <div class="w3-row w3-margin-bottom">
+            <div class="w3-col s0 m1 l1">
+                <p></p>
+            </div>
+            <div class="w3-col s12 m10 l10">
+                <div>
+                    <span class="mat-title ms-font-montserrat ms-color-11" style="font-weight: 900">
+                        <mat-icon class="ms-icons-color" style="vertical-align:middle">money_attach</mat-icon>
+                        Reportes <mat-icon style="vertical-align:middle">keyboard_arrow_right</mat-icon> Ventas
+                    </span>
+                </div>
+                <div>
+
+                    <mat-form-field class="w3-margin-left">
+                        <input matInput [matDatepicker]="fromDay" [formControl]="fromFormControl">
+                        <mat-datepicker-toggle matSuffix [for]="fromDay"></mat-datepicker-toggle>
+                        <mat-datepicker #fromDay disabled="false">
+                        </mat-datepicker>
+                        <mat-hint>
+                            <strong>Filtrar desde este día</strong>
+                        </mat-hint>
+                    </mat-form-field>
+
+                    <mat-form-field class="w3-margin-left">
+                        <input matInput [matDatepicker]="toDay" [formControl]="toFormControl">
+                        <mat-datepicker-toggle matSuffix [for]="toDay"></mat-datepicker-toggle>
+                        <mat-datepicker #toDay disabled="false">
+                        </mat-datepicker>
+                        <mat-hint>
+                            <strong>Filtrar hasta este día</strong>
+                        </mat-hint>
+                    </mat-form-field>
+
+                    <button mat-button style="margin:0em 0.2em 1em 0.2em" disabled>
+                        <mat-icon>loyalty</mat-icon> {{dbs.separateProducts.length | number: '2.0'}} Productos
+                    </button>
+
+                    <mat-form-field class="w3-margin-right">
+                        <mat-label>Filtrar por usuario</mat-label>
+                        <mat-icon matPrefix style="margin-right:0.5em; ">account_circle</mat-icon>
+                        <mat-icon matSuffix style="vertical-align:bottom">arrow_drop_down</mat-icon>
+                        <input matInput type="text" [formControl]="user" [matAutocomplete]="userAuto"
+                            placeholder="Nombre..." autocomplete="off">
+                        <mat-autocomplete #userAuto="matAutocomplete" [displayWith]="showUser">
+                            <mat-option *ngFor="let item of filteredUsers | async" [value]="item">{{item.displayName}}
+                            </mat-option>
+                        </mat-autocomplete>
+                    </mat-form-field>
+
+                    <span style="margin-right:1em">
+                        <mat-form-field autocomplete="off" color="accent">
+                            <mat-label>Filtrar tabla</mat-label>
+                            <mat-icon matPrefix style="margin-right:0.5em; vertical-align:text-bottom">filter_list
+                            </mat-icon>
+                            <input matInput type="text" placeholder="Escriba ..."
+                                (input)="filterData($event.target.value)" autocomplete="off">
+                        </mat-form-field>
+                    </span><br>
+
+                </div>
+                <mat-divider></mat-divider>
+            </div>
+            <div class="w3-col s0 m1 l1">
+                <p></p>
+            </div>
+        </div>
+
+        <div class="w3-row">
+            <div class="w3-col s0 m1 l1">
+                <p></p>
+            </div>
+            <div class="w3-col s12 m10 l10">
+                <div class="mat-elevation-z8">
+                    <div style=" overflow:auto">
+                        <table mat-table [dataSource]="dataSource" matSort style="width:100%">
+
+                            <ng-container matColumnDef="index" sticky>
+                                <th mat-header-cell style="padding-right:1em" *matHeaderCellDef>N°</th>
+                                <td mat-cell style="padding-right:1em" *matCellDef="let raw; let i = index">
+                                    {{raw.index}}
+                                </td>
+                                <td mat-footer-cell *matFooterCellDef></td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="regDate">
+                                <th mat-header-cell style="padding:0px 1em; min-width:130px" *matHeaderCellDef>
+                                    Fecha y Hora</th>
+                                <td mat-cell style="padding:0px 1em" *matCellDef="let raw">
+                                    <span *ngIf="raw.regDate">{{raw.regDate | date : 'dd/MM/yyyy'}}</span><br>
+                                    <span *ngIf="raw.regDate" class="w3-small"><b>
+                                            ({{raw.regDate | date : 'hh:mm a'}})</b></span>
+                                </td>
+                                <td mat-footer-cell *matFooterCellDef></td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="document">
+                                <th mat-header-cell style="padding:0px 8px; min-width:65px" *matHeaderCellDef>Documento
+                                </th>
+                                <td mat-cell style="padding:0px 8px" *matCellDef="let raw">
+                                    {{raw.document.name}}-{{raw.documentSerial}}-{{raw.documentCorrelative}}
+                                </td>
+                                <td mat-footer-cell *matFooterCellDef></td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="product">
+                                <th mat-header-cell style="padding:0px 8px; min-width:65px" *matHeaderCellDef>Producto
+                                </th>
+                                <td mat-cell style="padding:0px 8px" *matCellDef="let raw">
+                                    {{raw.product ? (raw.product.name + '(' + raw.color + ')#' + raw.serie) : '---'}}
+                                </td>
+                                <td mat-footer-cell *matFooterCellDef></td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="customer">
+                                <th mat-header-cell style="padding:0px 8px; min-width:65px" *matHeaderCellDef>
+                                    Cliente
+                                </th>
+                                <td mat-cell style="padding:0px 8px" *matCellDef="let raw">
+                                    {{raw.customer ? (raw.customer.businessName ? raw.customer.businessName : raw.customer.name + (raw.customer.lastname ? (', ' + raw.lastname) : '')) : '---'}}
+                                </td>
+                                <td mat-footer-cell *matFooterCellDef class="w3-green w3-center"><b>Total</b></td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="price">
+                                <th mat-header-cell style="padding:0px 8px; min-width:65px" *matHeaderCellDef>Importe
+                                    (S/.)</th>
+                                <td mat-cell style="padding:0px 8px" *matCellDef="let raw">
+                                    {{raw.price | currency : 'S/.'}}
+                                </td>
+                                <td mat-footer-cell *matFooterCellDef class="w3-green w3-center">{{totalImport | currency : 'S/.'}}</td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="discountedAmount">
+                                <th mat-header-cell style="padding:0px 8px; min-width:65px" *matHeaderCellDef>Descuento
+                                    (S/.)</th>
+                                <td mat-cell style="padding:0px 8px" *matCellDef="let raw">
+                                    {{raw.discountedAmount | currency : 'S/.'}}
+                                </td>
+                                <td mat-footer-cell *matFooterCellDef class="w3-green w3-center">{{totalDiscountedAmount | currency : 'S/.'}}</td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="discount">
+                                <th mat-header-cell style="padding:0px 8px; min-width:65px" *matHeaderCellDef>Descuento
+                                    (%)</th>
+                                <td mat-cell style="padding:0px 8px" *matCellDef="let raw">
+                                    {{(100 -raw.discount) | number : '.2'}} %
+                                </td>
+                                <td mat-footer-cell *matFooterCellDef></td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="createdBy">
+                                <th mat-header-cell style="padding:0px 1em; min-width:130px" *matHeaderCellDef>
+                                    Usuario</th>
+                                <td mat-cell style="padding:0px 1em" *matCellDef="let raw">
+                                    {{raw.createdBy ? raw.createdBy : '---' }}
+                                </td>
+                                <td mat-footer-cell *matFooterCellDef></td>
+                            </ng-container>
+
+                            <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+                            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+                            <tr mat-footer-row *matFooterRowDef="displayedColumns"></tr>
+                        </table>
+                    </div>
+                    <mat-paginator [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>
+                </div>
+            </div>
+            <div class="w3-col s0 m1 l1">
+                <p></p>
+            </div>
+        </div>
+    </div>
+</div>

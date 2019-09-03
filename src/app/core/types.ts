@@ -334,20 +334,6 @@ export interface TicketRawMaterial {
     canceledDate?: number;
 }
 
-export interface DepartureRawMaterial {
-    id: string;
-    OPCorrelative: string;
-    raw: RawMaterial;
-    quantity: number;
-    source: string;
-    regDate: number;
-    createdBy: string;
-    createdByUid: string;
-    canceledBy?: string;
-    canceldByUid?: string;
-    canceledDate?: number;
-}
-
 export interface TicketProduct {
     id: string;
     OPCorrelative: string;
@@ -362,14 +348,16 @@ export interface TicketProduct {
     canceledDate?: number;
 }
 
-export interface DepartureProduct {
+export interface Departure {
     id: string;
     document: Document;
     documentSerial: number;
     documentCorrelative: number;
+    OPCorrelative?: string;
+    raw?: RawMaterial;
     product?: Product;
-    serie: number;
-    color: string;
+    serie?: number;
+    color?: string;
     quantity: number;
     price: number;
     discount: number;
@@ -379,6 +367,7 @@ export interface DepartureProduct {
     customerType?: string;
     customer?: WholesaleCustomer | Customer;
     source: string;
+    rawMaterialPath?: string;
     productPath?: string;
     cashTransactionPath?: string;
     regDate: number;

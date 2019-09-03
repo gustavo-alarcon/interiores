@@ -3,7 +3,7 @@ import { FormGroup, FormBuilder, Validators } from '@angular/forms';
 import { DatabaseService } from 'src/app/core/database.service';
 import { AuthService } from 'src/app/core/auth.service';
 import { MatDialogRef, MAT_DIALOG_DATA, MatSnackBar, MatDialog } from '@angular/material';
-import { Product, SerialNumber, DepartureProduct, Document, Cash, WholesaleCustomer, Customer } from 'src/app/core/types';
+import { Product, SerialNumber, Departure, Document, Cash, WholesaleCustomer, Customer } from 'src/app/core/types';
 import { debounceTime, map, startWith } from 'rxjs/operators';
 import { Observable, Subscription } from 'rxjs';
 import { isObjectValidator } from 'src/app/core/is-object-validator';
@@ -268,7 +268,7 @@ export class CheckStockSellDialogComponent implements OnInit, OnDestroy {
                 };
 
                 // DEPARTURE *********
-                const departure: DepartureProduct = {
+                const departure: Departure = {
                   id: '',
                   document: this.dataFormGroup.value['document'],
                   documentSerial: this.dataFormGroup.value['documentSerial'],
@@ -278,7 +278,7 @@ export class CheckStockSellDialogComponent implements OnInit, OnDestroy {
                   color: this.data.serial.color ? this.data.serial.color : null,
                   quantity: 1,
                   price: this.dataFormGroup.value['price'],
-                  discount: (this.dataFormGroup.value['price'] / this.data.product.sale) * 100,
+                  discount: this.dataFormGroup.value['discount'],
                   paymentType: this.dataFormGroup.value['paymentType'],
                   destinationAccount: this.dataFormGroup.value['destinationAccount'],
                   customerType: this.dataFormGroup.value['customerType'],
