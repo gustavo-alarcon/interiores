@@ -41,7 +41,9 @@ export class MenuComponent implements OnInit, OnDestroy {
       quotations: false,
       sales: false,
       stores: false,
-      checkStock: false
+      checkStock: false,
+      separateProducts: false,
+      history: false
     },
     production: {
       requirements: false,
@@ -97,6 +99,11 @@ export class MenuComponent implements OnInit, OnDestroy {
       salesShoppingButton: false,
       salesStoresButton: false,
       salesCheckStockButton: false,
+      salesSeparateProductsButton: false,
+      salesSeparateProductsSellAction: false,
+      salesSeparateProductsCancelAction: false,
+      salesSeparateProductsChangeSerialAction: false,
+      salesHistoryButton: false,
       productionSection: false,
       productionRequirementsButton: false,
       productionOrdersButton: false,
@@ -236,7 +243,9 @@ export class MenuComponent implements OnInit, OnDestroy {
         quotations: false,
         sales: false,
         stores: false,
-        checkStock: false
+        checkStock: false,
+        separateProducts: false,
+        history: false
       },
       production: {
         requirements: false,
@@ -400,6 +409,20 @@ export class MenuComponent implements OnInit, OnDestroy {
           this.selectedTab.setValue(0);
           this.cleanButtons();
           this.buttonOptions.sales.stores = true;
+          coincidence = true;
+          break;
+
+        case '/main/sales/separate-products':
+          this.selectedTab.setValue(0);
+          this.cleanButtons();
+          this.buttonOptions.sales.separateProducts = true;
+          coincidence = true;
+          break;
+
+        case '/main/sales/history':
+          this.selectedTab.setValue(0);
+          this.cleanButtons();
+          this.buttonOptions.sales.history = true;
           coincidence = true;
           break;
       }

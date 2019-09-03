@@ -25,7 +25,8 @@ export class RetriveMoneyCashDialogComponent implements OnInit {
     'MATERIA PRIMA',
     'GASTO',
     'TRANSFERENCIA',
-    'PRESTAMO'
+    'PRESTAMO',
+    'DEVOLUCION'
   ]
 
   expenseTypes = [

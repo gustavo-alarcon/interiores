@@ -290,7 +290,9 @@ export class CheckStockSeparateDialogComponent implements OnInit, OnDestroy {
                   documentName: this.dataFormGroup.value['document']['name'],
                   documentSerial: this.dataFormGroup.value['documentSerial'],
                   documentCorrelative: this.dataFormGroup.value['documentCorrelative'],
+                  customerType: this.dataFormGroup.value['customerType'],
                   customer: this.dataFormGroup.value['customer'],
+                  serial: this.data.serial,
                   paidImport: this.dataFormGroup.value['paidImport'],
                   indebtImport: this.dataFormGroup.value['indebtImport'],
                   productPath: productDocument.ref.path,
@@ -313,12 +315,13 @@ export class CheckStockSeparateDialogComponent implements OnInit, OnDestroy {
                 }
 
                 const cashTransaction = {
-                  id: '',
+                  id: cashTransactionReference.id,
                   regDate: Date.now(),
                   type: 'SEPARADO',
                   description: this.dataFormGroup.value['document']['name']
                     + ', Serie ' + this.dataFormGroup.value['documentSerial']
                     + ', Correlativo ' + this.dataFormGroup.value['documentCorrelative']
+                    + ', Tienda ' + this.data.serial.location
                     + ', Producto ' + this.data.serial.name + '#' + this.data.serial.serie
                     + ', Cliente ' + customerName,
                   import: this.dataFormGroup.value['paidImport'],

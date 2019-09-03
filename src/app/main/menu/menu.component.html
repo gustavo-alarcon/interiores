@@ -76,6 +76,18 @@
                                 <mat-icon class="ms-icons-color">search</mat-icon> Consultar
                             </button><br>
                         </div>
+                        <div class="w3-margin-right">
+                            <button mat-button class="w3-small"
+                                [ngClass]="{'ms-button-selected': buttonOptions.sales.separateProducts}" routerLink="sales/separate-products"
+                                [disabled]="!permits.salesSeparateProductsButton">
+                                <mat-icon class="ms-icons-color">loyalty</mat-icon> Separaciones
+                            </button><br>
+                            <button mat-button class="w3-small"
+                                [ngClass]="{'ms-button-selected': buttonOptions.sales.history}"
+                                routerLink="sales/check-stock" [disabled]="!permits.salesHistoryButton">
+                                <mat-icon class="ms-icons-color">history</mat-icon> Historial
+                            </button><br>
+                        </div>
                     </div>
                 </div>
             </mat-tab>

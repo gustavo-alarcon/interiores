@@ -25,6 +25,11 @@ export interface Permit {
     salesShoppingButton: boolean;
     salesStoresButton: boolean;
     salesCheckStockButton: boolean;
+    salesSeparateProductsButton: boolean;
+    salesSeparateProductsSellAction: boolean;
+    salesSeparateProductsCancelAction: boolean;
+    salesSeparateProductsChangeSerialAction: boolean;
+    salesHistoryButton: boolean;
     productionSection: boolean;
     productionRequirementsButton: boolean;
     productionOrdersButton: boolean;
@@ -97,7 +102,7 @@ export interface SerialNumber {
     modifiedDate?: number;
     separatedBy?: User;
     separateDate?: number;
-    soldBy?: User; 
+    soldBy?: User;
     saleDate?: number;
 }
 
@@ -362,7 +367,7 @@ export interface DepartureProduct {
     document: Document;
     documentSerial: number;
     documentCorrelative: number;
-    product: Product;
+    product?: Product;
     serie: number;
     color: string;
     quantity: number;
@@ -375,7 +380,7 @@ export interface DepartureProduct {
     customer?: WholesaleCustomer | Customer;
     source: string;
     productPath?: string;
-    cashTransactionPath?: string; 
+    cashTransactionPath?: string;
     regDate: number;
     createdBy: string;
     createdByUid: string;
@@ -556,17 +561,6 @@ export interface CashOpening {
     }
 }
 
-export interface CreditNote {
-    id: string;
-    documentReference: Transaction,
-    customerReference: Customer | WholesaleCustomer;
-    expirationDate: number;
-    createdBy: User;
-    regDate: number;
-    editedBy: User;
-    editedDate: number;
-}
-
 export interface Transaction {
     id: string;
     regDate: number;
@@ -663,6 +657,26 @@ export interface Purchase {
     verifiedDate: number;
 }
 
+export interface CreditNote {
+    id: string;
+    documentName: string;
+    documentSerial: string;
+    documentCorrelative: number;
+    customer: Customer | WholesaleCustomer;
+    serial: SerialNumber;
+    returnImport: number;
+    status: string;
+    separateProductPath: string;
+    separateTransactionPath: string;
+    productPath: string;
+    regDate: number;
+    createdBy: User;
+    approvedBy?: User;
+    approvalDate?: number;
+    canceledBy?: User;
+    cancellationDate?: number;
+}
+
 export interface SystemActivityEvent {
     id: string;
     event: string;
@@ -689,7 +703,9 @@ export interface SeparateProduct {
     documentName: string;
     documentSerial: string;
     documentCorrelative: number;
+    customerType?: string;
     customer: Customer | WholesaleCustomer;
+    serial: SerialNumber;
     paidImport: number;
     indebtImport: number;
     productPath: string;

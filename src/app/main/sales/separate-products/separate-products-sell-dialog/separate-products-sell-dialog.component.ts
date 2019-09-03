@@ -1,22 +1,20 @@
-import { SerialNumber, Product, DepartureProduct, Store, Document, Cash, WholesaleCustomer, Customer } from './../../../../core/types';
-import { Component, OnInit, Inject } from '@angular/core';
+import { Component, OnInit, Inject, OnDestroy } from '@angular/core';
+import { FormGroup, FormBuilder, Validators } from '@angular/forms';
+import { Observable, Subscription } from 'rxjs';
+import { Cash, SerialNumber, Product, Document, SeparateProduct, DepartureProduct } from 'src/app/core/types';
 import { DatabaseService } from 'src/app/core/database.service';
 import { AuthService } from 'src/app/core/auth.service';
-import { FormGroup, FormBuilder, Validators } from '@angular/forms';
-import { MatDialogRef, MAT_DIALOG_DATA, MatSnackBar, MatDialog } from '@angular/material';
-import { debounceTime, map, startWith } from 'rxjs/operators';
-import { Observable, Subscription } from 'rxjs';
-import { isObjectValidator } from 'src/app/core/is-object-validator';
-import { StoresCreateWholesaleDialogComponent } from '../stores-create-wholesale-dialog/stores-create-wholesale-dialog.component';
-import { StoresCreateCustomerDialogComponent } from '../stores-create-customer-dialog/stores-create-customer-dialog.component';
 import { AngularFirestore } from '@angular/fire/firestore';
+import { MatDialog, MatDialogRef, MAT_DIALOG_DATA, MatSnackBar } from '@angular/material';
+import { debounceTime, startWith, map } from 'rxjs/operators';
+import { isObjectValidator } from 'src/app/core/is-object-validator';
 
 @Component({
-  selector: 'app-stores-sell-dialog',
-  templateUrl: './stores-sell-dialog.component.html',
+  selector: 'app-separate-products-sell-dialog',
+  templateUrl: './separate-products-sell-dialog.component.html',
   styles: []
 })
-export class StoresSellDialogComponent implements OnInit {
+export class SeparateProductsSellDialogComponent implements OnInit, OnDestroy {
 
   loading: boolean = false;
 
@@ -26,13 +24,21 @@ export class StoresSellDialogComponent implements OnInit {
     'TARJETA VISA',
     'TARJETA MASTERCARD',
     'TARJETA ESTILOS',
-    'EFECTIVO'
+    'EFECTIVO',
+    'TRANSFERENCIA'
+  ]
+
+  destinationAccounts = [
+    'CUENTA SHIRLEY',
+    'CUENTA INTERIORES',
+    'CUENTA FERNANDO'
   ]
 
   filteredDocuments: Observable<Document[]>;
-  filteredCustomers: Observable<WholesaleCustomer[] | Customer[]>;
+
   filteredCash: Observable<Cash[]>;
-  preFilteredCash: Array<Cash> = [];
+
+  destinationAccountRequired: boolean = false;
 
   subscriptions: Array<Subscription> = [];
 
@@ -42,8 +48,8 @@ export class StoresSellDialogComponent implements OnInit {
     private af: AngularFirestore,
     public fb: FormBuilder,
     private dialog: MatDialog,
-    private dialogRef: MatDialogRef<StoresSellDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: { product: Product, store: Store, serial: SerialNumber },
+    private dialogRef: MatDialogRef<SeparateProductsSellDialogComponent>,
+    @Inject(MAT_DIALOG_DATA) public data: { separateProduct: SeparateProduct },
     private snackbar: MatSnackBar
   ) { }
 
@@ -57,7 +63,7 @@ export class StoresSellDialogComponent implements OnInit {
       .subscribe(res => {
         if (res) {
           let disc = 0;
-          disc = 100 - (res * 100) / this.data.product.sale;
+          disc = 100 - (res * 100) / this.data.separateProduct.indebtImport;
           this.dataFormGroup.get('discount').setValue(disc.toFixed(2));
         }
       });
@@ -68,9 +74,9 @@ export class StoresSellDialogComponent implements OnInit {
           startWith<any>(''),
           map(value => typeof value === 'string' ? value.toLowerCase() : value.name.toLowerCase()),
           map(name => name ? this.dbs.documents.filter(option => option.name.toLowerCase().includes(name)) : this.dbs.documents)
-        );
+        )
 
-    // this.preFilteredCash = this.dbs.cashList.filter(option => option.location.name === this.data.store.name);
+    // this.preFilteredCash = this.dbs.cashList.filter(option => option.location.name === this.data.serial.location);
 
     this.filteredCash =
       this.dataFormGroup.get('cash').valueChanges
@@ -80,43 +86,33 @@ export class StoresSellDialogComponent implements OnInit {
           map(name => name ? this.dbs.cashList.filter(option => option.name.toLowerCase().includes(name)) : this.dbs.cashList)
         )
 
-    const customerType$ =
-      this.dataFormGroup.get('customerType').valueChanges
+    const paymentType$ =
+      this.dataFormGroup.get('paymentType').valueChanges
         .subscribe(res => {
-          if (res === 'MAYORISTA') {
-            this.dataFormGroup.get('customer').reset();
-            this.filteredCustomers =
-              this.dataFormGroup.get('customer').valueChanges
-                .pipe(
-                  startWith<any>(''),
-                  map(value => {
-                    if (value) {
-                      return typeof value === 'string' ? value.trim().toLowerCase() : (value.businessName ? value.businessName.toLowerCase() : value.name.toLowerCase())
-                    } else {
-                      return '';
-                    }
-                  }),
-                  map(name => name ? this.dbs.wholesale.filter(option => (option.businessName ? option.businessName.toLowerCase().includes(name) : false) || (option.name ? option.name.toLowerCase().includes(name) : false)) : this.dbs.wholesale)
-                )
-          } else if (res === 'GENERAL') {
-            this.dataFormGroup.get('customer').reset();
-            this.filteredCustomers =
-              this.dataFormGroup.get('customer').valueChanges
-                .pipe(
-                  startWith<any>(''),
-                  map(value => {
-                    if (value) {
-                      return typeof value === 'string' ? value.trim().toLowerCase() : value.name.toLowerCase()
-                    } else {
-                      return '';
-                    }
-                  }),
-                  map(name => name ? this.dbs.customers.filter(option => option.name.toLowerCase().includes(name)) : this.dbs.customers)
-                )
+          if (res === 'TRANSFERENCIA') {
+            this.destinationAccountRequired = true;
+          } else {
+            this.destinationAccountRequired = false;
           }
         });
 
-    this.subscriptions.push(customerType$);
+    this.subscriptions.push(paymentType$);
+
+    const destinationAccount$ =
+      this.dataFormGroup.get('destinationAccount').valueChanges
+        .subscribe(res => {
+          if (res) {
+            this.destinationAccountRequired = false;
+          } else {
+            this.destinationAccountRequired = true;
+          }
+        });
+
+    this.subscriptions.push(destinationAccount$);
+  }
+
+  ngOnDestroy() {
+    this.subscriptions.forEach(sub => sub.unsubscribe());
   }
 
   createForm(): void {
@@ -124,12 +120,13 @@ export class StoresSellDialogComponent implements OnInit {
       document: [null, [Validators.required, isObjectValidator]],
       documentSerial: [null, [Validators.required]],
       documentCorrelative: [null, [Validators.required]],
-      customerType: [null, [Validators.required]],
-      customer: [null, [Validators.required, isObjectValidator]],
-      price: [null, [Validators.required]],
-      discount: 0,
+      customerType: this.data.separateProduct.customerType ? this.data.separateProduct.customerType : '',
+      customer: this.data.separateProduct.customer,
+      price: [this.data.separateProduct.indebtImport, [Validators.required]],
+      discount: [0, [Validators.required]],
       paymentType: [null, [Validators.required]],
-      cash: [null, [Validators.required, isObjectValidator]]
+      destinationAccount: null,
+      cash: [null, [Validators.required, isObjectValidator]],
     });
   }
 
@@ -137,60 +134,25 @@ export class StoresSellDialogComponent implements OnInit {
     return document ? document.name : null;
   }
 
-  showCustomer(customer: any): string | null {
-    if (customer) {
-      if (customer.businessName) {
-        return customer.businessName;
-      } else if (customer.name) {
-        return customer.name + (customer.lastname ? (' ' + customer.lastname) : '');
-      }
-    } else {
-      return null;
-    }
-
-  }
-
   showCash(cash: Cash): string | null {
     return cash ? cash.name : null;
-  }
-
-  addWholesale(): void {
-    this.dialog.open(StoresCreateWholesaleDialogComponent)
-      .afterClosed().subscribe(res => {
-        if (res) {
-          this.dataFormGroup.get('customer').setValue(res);
-        }
-      });
-  }
-
-  addCustomer(): void {
-    this.dialog.open(StoresCreateCustomerDialogComponent)
-      .afterClosed().subscribe(res => {
-        if (res) {
-          this.dataFormGroup.get('customer').setValue(res);
-        }
-      });
   }
 
   save(): void {
     if (this.dataFormGroup.valid) {
       this.loading = true;
 
-      const store = this.dbs.stores.filter(option => option.name === this.data.serial.location);
+      const store = this.dbs.stores.filter(option => option.name === this.data.separateProduct.serial.location);
 
       /**
        * SETTING REFERENCES
        * -Product
        * -Departure
        * -Cash
+       * -SeparateProduct
        */
       const productReference =
-        this.dbs.storesCollection
-          .doc(store[0].id)
-          .collection('products')
-          .doc(this.data.product.id)
-          .collection('products')
-          .doc(this.data.serial.id);
+        this.af.doc(this.data.separateProduct.productPath).ref;
 
       const departureReference =
         this.af.firestore.collection(this.dbs.departuresCollection.ref.path).doc();
@@ -204,9 +166,13 @@ export class StoresSellDialogComponent implements OnInit {
       const cashTransactionReference =
         this.af.firestore.collection(cashCollection.ref.path).doc();
 
+      const separateProductReference =
+        this.dbs.separateProductsCollection
+          .doc(this.data.separateProduct.id).ref;
+
       try {
         this.af.firestore.runTransaction(t => {
-          return t.get(productReference.ref)
+          return  t.get(productReference)
             .then(doc => {
 
               // ****************** READS AND PRE-SETS ********************
@@ -215,9 +181,10 @@ export class StoresSellDialogComponent implements OnInit {
 
               if (status === 'Vendido') {
                 this.loading = false;
-                this.snackbar.open(`El número de serie #${this.data.serial.serie} ya fue vendido. Seleccione otro número de serie para continuar con la venta`, 'Cerrar', {
+                this.snackbar.open(`El producto: ${this.data.separateProduct.serial.name}#${this.data.separateProduct.serial.serie} ya fue vendido. Cierre la ventana y escoja otro número de serie (Cambiar producto)`, 'Cerrar', {
                   duration: 10000
                 });
+                return;
               } else {
                 // PRODUCT **********
                 const product = {
@@ -235,19 +202,19 @@ export class StoresSellDialogComponent implements OnInit {
                   document: this.dataFormGroup.value['document'],
                   documentSerial: this.dataFormGroup.value['documentSerial'],
                   documentCorrelative: this.dataFormGroup.value['documentCorrelative'],
-                  product: this.data.product,
-                  serie: this.data.serial.serie,
-                  color: this.data.serial.color ? this.data.serial.color : null,
+                  product: null,
+                  serie: this.data.separateProduct.serial.serie,
+                  color: this.data.separateProduct.serial.color ? this.data.separateProduct.serial.color : null,
                   quantity: 1,
                   price: this.dataFormGroup.value['price'],
-                  discount: (this.dataFormGroup.value['price'] / this.data.product.sale) * 100,
+                  discount: (this.dataFormGroup.value['price'] / this.data.separateProduct.indebtImport) * 100,
                   paymentType: this.dataFormGroup.value['paymentType'],
                   destinationAccount: this.dataFormGroup.value['destinationAccount'],
                   customerType: this.dataFormGroup.value['customerType'],
                   customer: this.dataFormGroup.value['customer'],
                   source: 'check stock',
-                  location: this.data.serial.location,
-                  productPath: productReference.ref.path,
+                  location: this.data.separateProduct.serial.location,
+                  productPath: productReference.path,
                   cashTransactionPath: cashTransactionReference.path,
                   regDate: Date.now(),
                   createdBy: this.auth.userInteriores.displayName,
@@ -273,8 +240,8 @@ export class StoresSellDialogComponent implements OnInit {
                   description: this.dataFormGroup.value['document']['name']
                     + ', Serie ' + this.dataFormGroup.value['documentSerial']
                     + ', Correlativo ' + this.dataFormGroup.value['documentCorrelative']
-                    + ', Tienda ' + this.data.serial.location
-                    + ', Producto ' + this.data.serial.name + '#' + this.data.serial.serie
+                    + ', Tienda ' + this.data.separateProduct.serial.location
+                    + ', Producto ' + this.data.separateProduct.serial.name + '#' + this.data.separateProduct.serial.serie
                     + ', Cliente ' + customerName
                     + ', Dsct.  ' + this.dataFormGroup.value['discount'] + '%',
                   import: this.dataFormGroup.value['price'],
@@ -289,7 +256,7 @@ export class StoresSellDialogComponent implements OnInit {
                   destinationAccount: this.dataFormGroup.value['destinationAccount'],
                   debt: 0,
                   departurePath: departureReference.path,
-                  productPath: productReference.ref.path,
+                  productPath: productReference.path,
                   lastEditBy: null,
                   lastEditUid: null,
                   lastEditDate: null,
@@ -299,35 +266,37 @@ export class StoresSellDialogComponent implements OnInit {
                 }
 
                 // ******************* WRITE OPERATIONS ***********************
-                t.update(productReference.ref, product);
+                t.update(productReference, product);
                 t.set(departureReference, departure);
                 t.set(cashTransactionReference, cashTransaction);
+                t.delete(separateProductReference);
+
+
               }
-            })
-            .then(() => {
-              this.loading = false;
-              this.snackbar.open(`${this.data.serial.name} #${this.data.serial.serie} vendido!`, 'Cerrar', {
-                duration: 6000
-              });
-              this.dialogRef.close(true);
-            })
-            .catch(err => {
-              this.loading = false;
-              console.log(err);
-              this.snackbar.open(`Parece que hubo un problema!`, 'Cerrar', {
-                duration: 6000
-              });
-            })
+            });
         })
+          .then(() => {
+            this.loading = false;
+            this.snackbar.open(`${this.data.separateProduct.serial.name} #${this.data.separateProduct.serial.serie} vendido!`, 'Cerrar', {
+              duration: 6000
+            });
+            this.dialogRef.close(true);
+          })
+          .catch(err => {
+            this.loading = false;
+            console.log(err);
+            this.snackbar.open(`Ups!...parece que hubo un error en la transacción`, 'Cerrar', {
+              duration: 6000
+            });
+          })
       } catch (err) {
         this.loading = false;
         console.log(err);
-        this.snackbar.open(`Ups!...parece que hubo un error, vuelva a preseionar el botón VENDER`, 'Cerrar', {
+        this.snackbar.open(`Ups!...parece que hubo un error, vuelva a presionar el botón VENDER`, 'Cerrar', {
           duration: 6000
         });
       }
     }
-
   }
 
 }

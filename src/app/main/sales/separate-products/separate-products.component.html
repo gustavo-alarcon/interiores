@@ -1,0 +1,156 @@
+<div style="min-height:100vh; background:rgba(230, 230, 250, 0.5)">
+    <div class="animated fadeInUpBig w3-margin-bottom" style="padding:16px">
+        <div class="w3-row w3-margin-bottom">
+            <div class="w3-col s0 m1 l1">
+                <p></p>
+            </div>
+            <div class="w3-col s12 m10 l10">
+                <div>
+                    <span class="mat-title ms-font-montserrat ms-color-11" style="font-weight: 900">
+                        <mat-icon class="ms-icons-color" style="vertical-align:middle">loyalty</mat-icon>
+                        Ventas <mat-icon style="vertical-align:middle">keyboard_arrow_right</mat-icon> Separaciones
+                    </span>
+                </div>
+                <div>
+
+                    <button mat-button style="margin:0em 0.2em 1em 0.2em" disabled>
+                        <mat-icon>loyalty</mat-icon> {{dbs.separateProducts.length | number: '2.0'}} Productos
+                    </button>
+
+                    <mat-form-field class="w3-margin-right">
+                        <mat-label>Filtrar por usuario</mat-label>
+                        <mat-icon matPrefix style="margin-right:0.5em; ">account_circle</mat-icon>
+                        <mat-icon matSuffix style="vertical-align:bottom">arrow_drop_down</mat-icon>
+                        <input matInput type="text" [formControl]="user" [matAutocomplete]="userAuto" placeholder="Nombre..."
+                            autocomplete="off">
+                        <mat-autocomplete #userAuto="matAutocomplete" [displayWith]="showUser">
+                            <mat-option *ngFor="let item of filteredUsers | async" [value]="item">{{item.displayName}}
+                            </mat-option>
+                        </mat-autocomplete>
+                    </mat-form-field>
+
+                    <span style="margin-right:1em">
+                        <mat-form-field autocomplete="off" color="accent">
+                            <mat-label>Filtrar tabla</mat-label>
+                            <mat-icon matPrefix style="margin-right:0.5em; vertical-align:text-bottom">filter_list
+                            </mat-icon>
+                            <input matInput type="text" placeholder="Escriba ..."
+                                (input)="filterData($event.target.value)" autocomplete="off">
+                        </mat-form-field>
+                    </span><br>
+
+                </div>
+                <mat-divider></mat-divider>
+            </div>
+            <div class="w3-col s0 m1 l1">
+                <p></p>
+            </div>
+        </div>
+
+        <div class="w3-row">
+            <div class="w3-col s0 m1 l1">
+                <p></p>
+            </div>
+            <div class="w3-col s12 m10 l10">
+                <div class="mat-elevation-z8">
+                    <div style=" overflow:auto">
+                        <table mat-table [dataSource]="dataSource" matSort style="width:100%">
+
+                            <ng-container matColumnDef="index" sticky>
+                                <th mat-header-cell style="padding-right:1em" *matHeaderCellDef>N°</th>
+                                <td mat-cell style="padding-right:1em" *matCellDef="let raw; let i = index">
+                                    {{raw.index}}
+                                </td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="document">
+                                <th mat-header-cell style="padding:0px 8px; min-width:65px" *matHeaderCellDef>Documento
+                                </th>
+                                <td mat-cell style="padding:0px 8px" *matCellDef="let raw">
+                                    {{raw.documentName}}-{{raw.documentSerial}}-{{raw.documentCorrelative}}
+                                </td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="customer">
+                                <th mat-header-cell style="padding:0px 8px; min-width:65px" *matHeaderCellDef>
+                                    Cliente
+                                </th>
+                                <td mat-cell style="padding:0px 8px" *matCellDef="let raw">
+                                    {{raw.customer.businessName ? raw.customer.businessName : raw.customer.name + (raw.customer.lastname ? (', ' + raw.lastname) : '')}}
+                                </td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="product">
+                                <th mat-header-cell style="padding:0px 8px; min-width:65px" *matHeaderCellDef>Producto
+                                </th>
+                                <td mat-cell style="padding:0px 8px" *matCellDef="let raw">
+                                    {{raw.serial ? (raw.serial.name + '(' + raw.serial.code + ')#' + raw.serial.serie) : '---'}}
+                                </td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="paidImport">
+                                <th mat-header-cell style="padding:0px 8px; min-width:65px" *matHeaderCellDef>A cuenta
+                                    (S/.)
+                                </th>
+                                <td mat-cell style="padding:0px 8px" *matCellDef="let raw">
+                                    {{raw.paidImport | currency : 'S/.'}}
+                                </td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="indebtImport">
+                                <th mat-header-cell style="padding:0px 8px; min-width:65px" *matHeaderCellDef>En deuda
+                                    (S/.)
+                                </th>
+                                <td mat-cell style="padding:0px 8px" *matCellDef="let raw">
+                                    {{raw.indebtImport | currency : 'S/.'}}
+                                </td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="createdBy">
+                                <th mat-header-cell style="padding:0px 1em; min-width:130px" *matHeaderCellDef>
+                                    Usuario</th>
+                                <td mat-cell style="padding:0px 1em" *matCellDef="let raw">
+                                    <span>{{raw.createdBy ? raw.createdBy.displayName : '---' }}</span><br>
+                                    <span *ngIf="raw.regDate">{{raw.regDate | date : 'dd/MM/yyyy'}}</span><br>
+                                    <span *ngIf="raw.regDate" class="w3-small"><b>
+                                            ({{raw.regDate | date : 'hh:mm a'}})</b></span>
+                                </td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="actions" stickyEnd>
+                                <th mat-header-cell style="padding:0px 8px" *matHeaderCellDef>Acciones</th>
+                                <td mat-cell style="padding:0px 24px" *matCellDef="let raw">
+                                    <mat-menu #rawMenu="matMenu">
+                                        <button mat-menu-item (click)="sellProduct(raw)"
+                                            *ngIf="auth.permit.salesSeparateProductsSellAction">
+                                            <mat-icon class="ms-icons-color">shopping_cart</mat-icon> Continuar venta
+                                        </button>
+                                        <button mat-menu-item (click)="cancelSeparation(raw)"
+                                            *ngIf="auth.permit.salesSeparateProductsCancelAction">
+                                            <mat-icon class="ms-icons-color">cancel</mat-icon> Cancelar separación
+                                        </button>
+                                        <button mat-menu-item (click)="changeProduct(raw)"
+                                            *ngIf="auth.permit.salesSeparateProductsChangeProductAction">
+                                            <mat-icon class="ms-icons-color">local_offer</mat-icon> Cambiar producto
+                                        </button>
+                                    </mat-menu>
+                                    <button mat-icon-button [matMenuTriggerFor]="rawMenu">
+                                        <mat-icon>more_vert</mat-icon>
+                                    </button>
+                                </td>
+                            </ng-container>
+
+                            <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+                            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+                        </table>
+                    </div>
+                    <mat-paginator [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>
+                </div>
+            </div>
+            <div class="w3-col s0 m1 l1">
+                <p></p>
+            </div>
+        </div>
+    </div>
+</div>

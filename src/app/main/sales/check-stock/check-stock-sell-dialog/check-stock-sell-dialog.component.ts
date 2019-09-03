@@ -311,6 +311,7 @@ export class CheckStockSellDialogComponent implements OnInit, OnDestroy {
                   description: this.dataFormGroup.value['document']['name']
                     + ', Serie ' + this.dataFormGroup.value['documentSerial']
                     + ', Correlativo ' + this.dataFormGroup.value['documentCorrelative']
+                    + ', Tienda ' + this.data.serial.location
                     + ', Producto ' + this.data.serial.name + '#' + this.data.serial.serie
                     + ', Cliente ' + customerName
                     + ', Dsct.  ' + this.dataFormGroup.value['discount'] + '%',

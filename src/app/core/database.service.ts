@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { AngularFirestore, AngularFirestoreDocument, AngularFirestoreCollection } from "@angular/fire/firestore";
-import { Requirement, Correlative, Product, Color, RawMaterial, Category, Unit, ProductionOrder, TicketRawMaterial, DepartureRawMaterial, Store, User, Transfer, DepartureProduct, Quotation, Document, Cash, Purchase, Provider, WholesaleCustomer, Customer, SystemActivityEvent, SalesCounter, SeparateProduct } from './types';
+import { Requirement, Correlative, Product, Color, RawMaterial, Category, Unit, ProductionOrder, TicketRawMaterial, DepartureRawMaterial, Store, User, Transfer, DepartureProduct, Quotation, Document, Cash, Purchase, Provider, WholesaleCustomer, Customer, SystemActivityEvent, SalesCounter, SeparateProduct, CreditNote } from './types';
 import { BehaviorSubject } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { AuthService } from './auth.service';
@@ -227,6 +227,16 @@ export class DatabaseService {
   public currentDataDebtsToPay = this.dataDebtsToPay.asObservable();
 
   /**
+   * CREDIT NOTES
+   */
+  creditNotesCollection: AngularFirestoreCollection<CreditNote>;
+  creditNotes: Array<CreditNote> = [];
+
+  public dataCreditNotes = new BehaviorSubject<CreditNote[]>([]);
+  public currentDataCreditNotes = this.dataCreditNotes.asObservable();
+
+
+  /**
    * PROVIDERS
    */
   providersCollection: AngularFirestoreCollection<Provider>;
@@ -347,6 +357,7 @@ export class DatabaseService {
         this.getCashList();
         this.getDebtsToPay();
         this.getPurchases(from, to);
+        this.getCreditNotes(fromDay, toDay);
         this.getProviders();
         this.getWholesaleCustomers();
         this.getCustomers();
@@ -393,7 +404,7 @@ export class DatabaseService {
   }
 
   getDocuments(): void {
-    this.documentsCollection = this.af.collection(`db/${this.auth.userInteriores.db}/documents`, ref => ref.orderBy('regDate', 'desc'));
+    this.documentsCollection = this.af.collection(`db/${this.auth.userInteriores.db}/documents`, ref => ref.orderBy('name', 'desc'));
     this.documentsCollection.valueChanges()
       .pipe(
         map(res => {
@@ -831,6 +842,26 @@ export class DatabaseService {
       .subscribe(res => {
         this.debtsToPay = res;
         this.dataDebtsToPay.next(res);
+      });
+  }
+
+  getCreditNotes(from: number, to: number): void {
+    this.creditNotesCollection = this.af.collection(`db/${this.auth.userInteriores.db}/creditNotes`, ref => ref.where('regDate', '>=', from).where('regDate', '<=', to));
+    this.creditNotesCollection.valueChanges()
+      .pipe(
+        map(res => {
+          return res.sort((a, b) => b['regDate'] - a['regDate']);
+        }),
+        map(res => {
+          res.forEach((element, index) => {
+            element['index'] = res.length - index;
+          });
+          return res;
+        })
+      )
+      .subscribe(res => {
+        this.creditNotes = res;
+        this.dataCreditNotes.next(res);
       });
   }
 
