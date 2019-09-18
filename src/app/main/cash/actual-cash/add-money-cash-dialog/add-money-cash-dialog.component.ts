@@ -29,7 +29,7 @@ export class AddMoneyCashDialogComponent implements OnInit {
     'VENTA',
     'SERVICIO',
     'PEDIDO',
-    'SEPARACION',
+    'SEPARADO',
     'OTRO'
   ]
 

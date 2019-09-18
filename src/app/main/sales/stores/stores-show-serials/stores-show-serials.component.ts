@@ -6,6 +6,8 @@ import { DatabaseService } from 'src/app/core/database.service';
 import { Product, SerialNumber, Store } from 'src/app/core/types';
 import { StoresChangeStatusConfirmComponent } from '../stores-change-status-confirm/stores-change-status-confirm.component';
 import { StoresSellDialogComponent } from '../stores-sell-dialog/stores-sell-dialog.component';
+import { StoresSeparateDialogComponent } from '../stores-separate-dialog/stores-separate-dialog.component';
+import { map } from 'rxjs/operators';
 
 @Component({
   selector: 'app-stores-show-serials',
@@ -13,6 +15,8 @@ import { StoresSellDialogComponent } from '../stores-sell-dialog/stores-sell-dia
   styles: []
 })
 export class StoresShowSerialsComponent implements OnInit, OnDestroy {
+
+  loading: boolean = false;
 
   displayedColumns: string[] = ['serie', 'status', 'color', 'actions'];
   dataSource = new MatTableDataSource();
@@ -34,6 +38,8 @@ export class StoresShowSerialsComponent implements OnInit, OnDestroy {
     this.dataSource.paginator = this.paginator;
     this.dataSource.sort = this.sort;
 
+    this.loading = true;
+
     const serie$ =
       this.dbs.storesCollection
         .doc(this.data.store.id)
@@ -41,8 +47,15 @@ export class StoresShowSerialsComponent implements OnInit, OnDestroy {
         .doc(this.data.product.id)
         .collection<SerialNumber>('products', ref => ref.orderBy('serie','desc'))
         .valueChanges()
+        .pipe(
+          map(res => {
+            const filtered = res.filter(option => option.status !== 'Vendido');
+            return filtered;
+          })
+        )
         .subscribe(res => {
           if (res) {
+            this.loading = false;
             this.dataSource.data = res;
           }
         });
@@ -69,6 +82,15 @@ export class StoresShowSerialsComponent implements OnInit, OnDestroy {
         product: this.data.product,
         store: this.data.store,
         serial: serial
+      }
+    });
+  }
+
+  separateProduct(serial: SerialNumber): void {
+    this.dialog.open(StoresSeparateDialogComponent, {
+      data: {
+        serial: serial,
+        product: this.data.product
       }
     });
   }

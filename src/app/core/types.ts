@@ -25,6 +25,11 @@ export interface Permit {
     salesShoppingButton: boolean;
     salesStoresButton: boolean;
     salesCheckStockButton: boolean;
+    salesSeparateProductsButton: boolean;
+    salesSeparateProductsSellAction: boolean;
+    salesSeparateProductsCancelAction: boolean;
+    salesSeparateProductsChangeSerialAction: boolean;
+    salesHistoryButton: boolean;
     productionSection: boolean;
     productionRequirementsButton: boolean;
     productionOrdersButton: boolean;
@@ -88,18 +93,18 @@ export interface SerialNumber {
     code: string;
     color: string;
     status: string;
+    customer?: Customer | WholesaleCustomer;
+    productionPath?: string;
+    departurePath?: string;
+    cashTransactionPath?: string;
     regDate: number;
-    createdBy: string;
-    createdByUid: string;
-    modifiedBy?: string;
-    modifiedByUid?: string;
+    createdBy: User;
+    modifiedBy?: User;
     modifiedDate?: number;
-    customerDisplayName?: string;
-    customerDocumentNumber?: string;
-    customerDate?: number;
-    takedBy?: string;
-    takedByUid?: string;
-    takedDate?: number;
+    separatedBy?: User;
+    separateDate?: number;
+    soldBy?: User;
+    saleDate?: number;
 }
 
 export interface Color {
@@ -330,20 +335,6 @@ export interface TicketRawMaterial {
     canceledDate?: number;
 }
 
-export interface DepartureRawMaterial {
-    id: string;
-    OPCorrelative: string;
-    raw: RawMaterial;
-    quantity: number;
-    source: string;
-    regDate: number;
-    createdBy: string;
-    createdByUid: string;
-    canceledBy?: string;
-    canceldByUid?: string;
-    canceledDate?: number;
-}
-
 export interface TicketProduct {
     id: string;
     OPCorrelative: string;
@@ -358,22 +349,28 @@ export interface TicketProduct {
     canceledDate?: number;
 }
 
-export interface DepartureProduct {
+export interface Departure {
     id: string;
     document: Document;
     documentSerial: number;
     documentCorrelative: number;
-    product: Product;
-    serie: number;
-    color: string;
+    OPCorrelative?: string;
+    raw?: RawMaterial;
+    product?: Product;
+    serie?: number;
+    color?: string;
     quantity: number;
     price: number;
     discount: number;
     paymentType: string;
+    destinationAccount?: string;
     location?: string | Store;
     customerType?: string;
     customer?: WholesaleCustomer | Customer;
     source: string;
+    rawMaterialPath?: string;
+    productPath?: string;
+    cashTransactionPath?: string;
     regDate: number;
     createdBy: string;
     createdByUid: string;
@@ -475,12 +472,24 @@ export interface WholesaleCustomer {
 
 export interface Customer {
     id: string;
-    name: string;
-    dni: number;
+    type: string;
+    name?: string;
+    lastname?: string;
+    displayName?: string;
     address?: string;
+    dni?: number;
     phone?: string;
     mail?: string;
     creditNote?: CreditNote;
+    businessName?: string;
+    businessAddress?: string;
+    ruc?: number;
+    businessPhone?: string;
+    contacts?: Array<{
+        contanctName?: string;
+        contactPhone?: string;
+        contactMail?: string;
+    }>;
     regDate: number;
     createdBy: User;
     editedBy?: User | null;
@@ -542,17 +551,6 @@ export interface CashOpening {
     }
 }
 
-export interface CreditNote {
-    id: string;
-    documentReference: Transaction,
-    customerReference: Customer | WholesaleCustomer;
-    expirationDate: number;
-    createdBy: User;
-    regDate: number;
-    editedBy: User;
-    editedDate: number;
-}
-
 export interface Transaction {
     id: string;
     regDate: number;
@@ -567,7 +565,11 @@ export interface Transaction {
     expenseType?: string;
     departureType?: string;
     originAccount?: string;
+    destinationAccount?: string;
     debt?: number;
+    separatePath?: string;
+    departurePath?: string;
+    productPath?: string;
     lastEditBy: string;
     lastEditUid: string;
     lastEditDate: number;
@@ -643,4 +645,65 @@ export interface Purchase {
     verifiedBy: string;
     verifiedByUid: string;
     verifiedDate: number;
+}
+
+export interface CreditNote {
+    id: string;
+    documentName: string;
+    documentSerial: string;
+    documentCorrelative: number;
+    customer: Customer | WholesaleCustomer;
+    serial: SerialNumber;
+    returnImport: number;
+    status: string;
+    separateProductPath: string;
+    separateTransactionPath: string;
+    productPath: string;
+    regDate: number;
+    createdBy: User;
+    approvedBy?: User;
+    approvalDate?: number;
+    canceledBy?: User;
+    cancellationDate?: number;
+}
+
+export interface SystemActivityEvent {
+    id: string;
+    event: string;
+    description: string;
+    module: string;
+    section: string;
+    regDate: number;
+    createdBy: User;
+}
+
+export interface SalesCounter {
+    id: string;
+    requirements: number;
+    orders: number;
+    quotations: number;
+    stores: number;
+    checkStock: number;
+    regDate: number;
+    lastUpdate: number;
+}
+
+export interface SeparateProduct {
+    id: string;
+    documentName: string;
+    documentSerial: string;
+    documentCorrelative: number;
+    customerType?: string;
+    customer: Customer | WholesaleCustomer;
+    serial: SerialNumber;
+    paidImport: number;
+    indebtImport: number;
+    productPath: string;
+    cashTransactionPath: string;
+    createdBy: User;
+    regDate: number;
+    soldBy?: User;
+    saleDate?: number;
+    canceledBy?: User;
+    cancelDate?: number;
 }

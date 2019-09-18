@@ -1,21 +1,22 @@
-import { Component, OnInit, Inject } from '@angular/core';
+import { Component, OnInit, Inject, OnDestroy } from '@angular/core';
 import { FormGroup, FormBuilder, Validators } from '@angular/forms';
 import { DatabaseService } from 'src/app/core/database.service';
 import { AuthService } from 'src/app/core/auth.service';
 import { MatDialogRef, MAT_DIALOG_DATA, MatSnackBar, MatDialog } from '@angular/material';
-import { Product, SerialNumber, DepartureProduct, Document, Cash, WholesaleCustomer, Customer } from 'src/app/core/types';
+import { Product, SerialNumber, Departure, Document, Cash, WholesaleCustomer, Customer } from 'src/app/core/types';
 import { debounceTime, map, startWith } from 'rxjs/operators';
 import { Observable, Subscription } from 'rxjs';
 import { isObjectValidator } from 'src/app/core/is-object-validator';
 import { CheckStockCreateWholesaleDialogComponent } from '../check-stock-create-wholesale-dialog/check-stock-create-wholesale-dialog.component';
 import { CheckStockCreateCustomerDialogComponent } from '../check-stock-create-customer-dialog/check-stock-create-customer-dialog.component';
+import { AngularFirestore } from '@angular/fire/firestore';
 
 @Component({
   selector: 'app-check-stock-sell-dialog',
   templateUrl: './check-stock-sell-dialog.component.html',
   styles: []
 })
-export class CheckStockSellDialogComponent implements OnInit {
+export class CheckStockSellDialogComponent implements OnInit, OnDestroy {
 
   loading: boolean = false;
 
@@ -25,19 +26,29 @@ export class CheckStockSellDialogComponent implements OnInit {
     'TARJETA VISA',
     'TARJETA MASTERCARD',
     'TARJETA ESTILOS',
-    'EFECTIVO'
+    'EFECTIVO',
+    'TRANSFERENCIA'
+  ]
+
+  destinationAccounts = [
+    'CUENTA SHIRLEY',
+    'CUENTA INTERIORES',
+    'CUENTA FERNANDO'
   ]
 
   filteredDocuments: Observable<Document[]>;
   filteredCustomers: Observable<WholesaleCustomer[] | Customer[]>;
   filteredCash: Observable<Cash[]>;
-  preFilteredCash: Array<Cash> = [];
+  // preFilteredCash: Array<Cash> = [];
+
+  destinationAccountRequired: boolean = false;
 
   subscriptions: Array<Subscription> = [];
 
   constructor(
     public dbs: DatabaseService,
     public auth: AuthService,
+    private af: AngularFirestore,
     public fb: FormBuilder,
     private dialog: MatDialog,
     private dialogRef: MatDialogRef<CheckStockSellDialogComponent>,
@@ -104,17 +115,45 @@ export class CheckStockSellDialogComponent implements OnInit {
                   startWith<any>(''),
                   map(value => {
                     if (value) {
-                      return typeof value === 'string' ? value.trim().toLowerCase() : value.name.toLowerCase()
+                      return typeof value === 'string' ? value.trim().toLowerCase() : (value.businessName ? value.businessName.toLowerCase() : value.name.toLowerCase())
                     } else {
                       return '';
                     }
                   }),
-                  map(name => name ? this.dbs.customers.filter(option => option.name.toLowerCase().includes(name)) : this.dbs.customers)
+                  map(name => name ? this.dbs.customers.filter(option => (option.businessName ? option.businessName.toLowerCase().includes(name) : false) || (option.name ? option.name.toLowerCase().includes(name) : false)) : this.dbs.customers)
                 )
           }
         });
 
     this.subscriptions.push(customerType$);
+
+    const paymentType$ =
+      this.dataFormGroup.get('paymentType').valueChanges
+        .subscribe(res => {
+          if (res === 'TRANSFERENCIA') {
+            this.destinationAccountRequired = true;
+          } else {
+            this.destinationAccountRequired = false;
+          }
+        });
+
+    this.subscriptions.push(paymentType$);
+
+    const destinationAccount$ =
+      this.dataFormGroup.get('destinationAccount').valueChanges
+        .subscribe(res => {
+          if (res) {
+            this.destinationAccountRequired = false;
+          } else {
+            this.destinationAccountRequired = true;
+          }
+        });
+
+    this.subscriptions.push(destinationAccount$);
+  }
+
+  ngOnDestroy() {
+    this.subscriptions.forEach(sub => sub.unsubscribe());
   }
 
   createForm(): void {
@@ -127,6 +166,7 @@ export class CheckStockSellDialogComponent implements OnInit {
       price: [null, [Validators.required]],
       discount: [0, [Validators.required]],
       paymentType: [null, [Validators.required]],
+      destinationAccount: null,
       cash: [null, [Validators.required, isObjectValidator]],
     });
   }
@@ -171,129 +211,162 @@ export class CheckStockSellDialogComponent implements OnInit {
   }
 
   save(): void {
-    this.loading = true;
     if (this.dataFormGroup.valid) {
-      const data: DepartureProduct = {
-        id: '',
-        document: this.dataFormGroup.value['document'],
-        documentSerial: this.dataFormGroup.value['documentSerial'],
-        documentCorrelative: this.dataFormGroup.value['documentCorrelative'],
-        product: this.data.product,
-        serie: this.data.serial.serie,
-        color: this.data.serial.color ? this.data.serial.color : null,
-        quantity: 1,
-        price: this.dataFormGroup.value['price'],
-        discount: (this.dataFormGroup.value['price'] / this.data.product.sale) * 100,
-        paymentType: this.dataFormGroup.value['paymentType'],
-        customerType: this.dataFormGroup.value['customerType'],
-        customer: this.dataFormGroup.value['customer'],
-        source: 'check stock',
-        location: this.data.serial.location,
-        regDate: Date.now(),
-        createdBy: this.auth.userInteriores.displayName,
-        createdByUid: this.auth.userInteriores.uid,
-        canceledBy: '',
-        canceldByUid: '',
-        canceledDate: null
-      }
+      this.loading = true;
 
-      this.dbs.departuresCollection
-        .add(data)
-        .then(ref => {
-          ref.update({ id: ref.id })
+      const store = this.dbs.stores.filter(option => option.name === this.data.serial.location);
+
+      /**
+       * SETTING REFERENCES
+       * -Product
+       * -Departure
+       * -Cash
+       */
+      const productReference =
+        this.dbs.storesCollection
+          .doc(store[0].id)
+          .collection('products')
+          .doc(this.data.product.id)
+          .collection('products')
+          .doc(this.data.serial.id);
+
+      const departureReference =
+        this.af.firestore.collection(this.dbs.departuresCollection.ref.path).doc();
+
+      const cashCollection =
+        this.dbs.cashListCollection
+          .doc(this.dataFormGroup.value['cash'].id)
+          .collection('openings')
+          .doc(this.dataFormGroup.value['cash'].currentOpening)
+          .collection('transactions');
+      const cashTransactionReference =
+        this.af.firestore.collection(cashCollection.ref.path).doc();
+
+      try {
+        this.af.firestore.runTransaction(t => {
+          return t.get(productReference.ref)
+            .then(doc => {
+
+              // ****************** READS AND PRE-SETS ********************
+              // PRODUCT READ ********
+              const status = doc.data().status;
+              const newStock =  doc.data().stock - 1;
+
+              if (status === 'Vendido') {
+                this.loading = false;
+                this.snackbar.open(`El producto: ${this.data.product.name}#${this.data.serial.serie} ya fue vendido. Seleccione otro número de serie para continuar con la venta`, 'Cerrar', {
+                  duration: 10000
+                });
+              } else {
+                // PRODUCT **********
+                const product = {
+                  stock: newStock,
+                  status: 'Vendido',
+                  customer: this.dataFormGroup.value['customer'],
+                  departurePath: departureReference.path,
+                  cashTransactionPath: cashTransactionReference.path,
+                  soldBy: this.auth.userInteriores,
+                  saleDate: Date.now()
+                };
+
+                // DEPARTURE *********
+                const departure: Departure = {
+                  id: '',
+                  document: this.dataFormGroup.value['document'],
+                  documentSerial: this.dataFormGroup.value['documentSerial'],
+                  documentCorrelative: this.dataFormGroup.value['documentCorrelative'],
+                  product: this.data.product,
+                  serie: this.data.serial.serie,
+                  color: this.data.serial.color ? this.data.serial.color : null,
+                  quantity: 1,
+                  price: this.dataFormGroup.value['price'],
+                  discount: this.dataFormGroup.value['discount'],
+                  paymentType: this.dataFormGroup.value['paymentType'],
+                  destinationAccount: this.dataFormGroup.value['destinationAccount'],
+                  customerType: this.dataFormGroup.value['customerType'],
+                  customer: this.dataFormGroup.value['customer'],
+                  source: 'check stock',
+                  location: this.data.serial.location,
+                  productPath: productReference.ref.path,
+                  cashTransactionPath: cashTransactionReference.path,
+                  regDate: Date.now(),
+                  createdBy: this.auth.userInteriores.displayName,
+                  createdByUid: this.auth.userInteriores.uid,
+                  canceledBy: '',
+                  canceldByUid: '',
+                  canceledDate: null
+                }
+
+                // CASH TRANSACTION **********
+                let customerName;
+
+                if (this.dataFormGroup.value['customer']['businessName']) {
+                  customerName = this.dataFormGroup.value['customer']['businessName'];
+                } else {
+                  customerName = this.dataFormGroup.value['customer']['name'] + (this.dataFormGroup.value['customer']['lastname'] ? (' ' + this.dataFormGroup.value['customer']['lastname']) : '');
+                }
+
+                const cashTransaction = {
+                  id: '',
+                  regDate: Date.now(),
+                  type: 'VENTA',
+                  description: this.dataFormGroup.value['document']['name']
+                    + ', Serie ' + this.dataFormGroup.value['documentSerial']
+                    + ', Correlativo ' + this.dataFormGroup.value['documentCorrelative']
+                    + ', Tienda ' + this.data.serial.location
+                    + ', Producto ' + this.data.serial.name + '#' + this.data.serial.serie
+                    + ', Cliente ' + customerName
+                    + ', Dsct.  ' + this.dataFormGroup.value['discount'] + '%',
+                  import: this.dataFormGroup.value['price'],
+                  user: this.auth.userInteriores,
+                  verified: false,
+                  status: 'Grabado',
+                  ticketType: 'VENTA',
+                  paymentType: this.dataFormGroup.value['paymentType'],
+                  expenseType: null,
+                  departureType: null,
+                  originAccount: null,
+                  destinationAccount: this.dataFormGroup.value['destinationAccount'],
+                  debt: 0,
+                  departurePath: departureReference.path,
+                  productPath: productReference.ref.path,
+                  lastEditBy: null,
+                  lastEditUid: null,
+                  lastEditDate: null,
+                  approvedBy: null,
+                  approvedByUid: null,
+                  approvedDate: null,
+                }
+
+                // ******************* WRITE OPERATIONS ***********************
+                t.update(productReference.ref, product);
+                t.set(departureReference, departure);
+                t.set(cashTransactionReference, cashTransaction);
+              }
+            })
             .then(() => {
-              const store = this.dbs.stores.filter(option => option.name === this.data.serial.location);
-              this.dbs.storesCollection
-                .doc(store[0].id)
-                .collection('products')
-                .doc(this.data.product.id)
-                .collection('products')
-                .doc(this.data.serial.id)
-                .update({ status: 'Vendido' }).
-                then(() => {
-                  this.loading = false;
-                  this.snackbar.open(`${this.data.serial.name} #${this.data.serial.serie} vendido!`, 'Cerrar', {
-                    duration: 6000
-                  });
-                  this.dialogRef.close(true);
-                })
-                .catch(err => {
-                  this.loading = false;
-                  this.snackbar.open('Parece que hubo un error actualizando el producto!', 'Cerrar', {
-                    duration: 6000
-                  });
-                  console.log(err);
-                })
+              this.loading = false;
+              this.snackbar.open(`${this.data.serial.name} #${this.data.serial.serie} vendido!`, 'Cerrar', {
+                duration: 6000
+              });
+              this.dialogRef.close(true);
             })
             .catch(err => {
               this.loading = false;
-              this.snackbar.open('Parece que hubo un error grabando el ID de venta!', 'Cerrar', {
+              console.log(err);
+              this.snackbar.open(`Parece que hubo un problema!`, 'Cerrar', {
                 duration: 6000
               });
-              console.log(err);
             })
         })
-        .catch(err => {
-          this.loading = false;
-          this.snackbar.open('Parece que hubo un error grabando el documento de venta!', 'Cerrar', {
-            duration: 6000
-          });
-          console.log(err);
-        })
-
-      let customerName;
-
-      if (this.dataFormGroup.value['customer']['businessName']) {
-        customerName = this.dataFormGroup.value['customer']['businessName'];
-      } else {
-        customerName = this.dataFormGroup.value['customer']['name'] + (this.dataFormGroup.value['customer']['lastname'] ? (' ' + this.dataFormGroup.value['customer']['lastname']) : '');
+      } catch (err) {
+        this.loading = false;
+        console.log(err);
+        this.snackbar.open(`Ups!...parece que hubo un error, vuelva a preseionar el botón VENDER`, 'Cerrar', {
+          duration: 6000
+        });
       }
-
-      const transaction = {
-        id: '',
-        regDate: Date.now(),
-        type: 'VENTA',
-        description: this.dataFormGroup.value['document']['name']
-          + ', Serie ' + this.dataFormGroup.value['documentSerial']
-          + ', Correlativo ' + this.dataFormGroup.value['documentCorrelative']
-          + ', Producto ' + this.data.serial.name + '#' + this.data.serial.serie
-          + ', Cliente ' + customerName
-          + ', Dsct.  ' + this.dataFormGroup.value['discount'] + '%',
-        import: this.dataFormGroup.value['price'],
-        user: this.auth.userInteriores,
-        verified: false,
-        status: 'Grabado',
-        ticketType: 'VENTA',
-        paymentType: this.dataFormGroup.value['paymentType'],
-        expenseType: null,
-        departureType: null,
-        originAccount: null,
-        debt: 0,
-        lastEditBy: null,
-        lastEditUid: null,
-        lastEditDate: null,
-        approvedBy: null,
-        approvedByUid: null,
-        approvedDate: null,
-      }
-
-      this.dbs.cashListCollection
-        .doc(this.dataFormGroup.value['cash'].id)
-        .collection('openings')
-        .doc(this.dataFormGroup.value['cash'].currentOpening)
-        .collection('transactions')
-        .add(transaction)
-        .then(ref => {
-          ref.update({ id: ref.id });
-        })
-        .catch(err => {
-          console.log(err);
-          this.snackbar.open('Parece que hubo un error guardan la transacción!', 'Cerrar', {
-            duration: 6000
-          });
-        })
     }
-
   }
 
 }

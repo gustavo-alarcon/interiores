@@ -8,13 +8,15 @@ import { MatFormFieldModule, MatIconModule, MatInputModule, MatButtonModule, Mat
 import { ThirdPartiesCustomersCreateDialogComponent } from './third-parties-customers-create-dialog/third-parties-customers-create-dialog.component';
 import { ThirdPartiesCustomersEditDialogComponent } from './third-parties-customers-edit-dialog/third-parties-customers-edit-dialog.component';
 import { ThirdPartiesCustomersDeleteConfirmComponent } from './third-parties-customers-delete-confirm/third-parties-customers-delete-confirm.component';
+import { ThirdPartiesCustomersContactsDialogComponent } from './third-parties-customers-contacts-dialog/third-parties-customers-contacts-dialog.component';
 
 @NgModule({
   declarations: [
     ThirdPartiesCustomersComponent,
     ThirdPartiesCustomersCreateDialogComponent,
     ThirdPartiesCustomersEditDialogComponent,
-    ThirdPartiesCustomersDeleteConfirmComponent
+    ThirdPartiesCustomersDeleteConfirmComponent,
+    ThirdPartiesCustomersContactsDialogComponent
   ],
   imports: [
     CommonModule,
@@ -44,7 +46,8 @@ import { ThirdPartiesCustomersDeleteConfirmComponent } from './third-parties-cus
   entryComponents: [
     ThirdPartiesCustomersCreateDialogComponent,
     ThirdPartiesCustomersEditDialogComponent,
-    ThirdPartiesCustomersDeleteConfirmComponent
+    ThirdPartiesCustomersDeleteConfirmComponent,
+    ThirdPartiesCustomersContactsDialogComponent
   ]
 })
 export class ThirdPartiesCustomersModule { }

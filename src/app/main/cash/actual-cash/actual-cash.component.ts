@@ -1,8 +1,8 @@
 import { Component, OnInit, ViewChild, OnDestroy } from '@angular/core';
 import { FormControl } from '@angular/forms';
-import { TicketProduct, TicketRawMaterial, DepartureProduct, DepartureRawMaterial, Cash, Transaction, CurrentCash } from 'src/app/core/types';
+import { Transaction, CurrentCash } from 'src/app/core/types';
 import { MatTableDataSource, MatPaginator, MatSort, MatDialog, MatSnackBar } from '@angular/material';
-import { Subscription, BehaviorSubject } from 'rxjs';
+import { Subscription } from 'rxjs';
 import { DatabaseService } from 'src/app/core/database.service';
 import { OpenCashDialogComponent } from './open-cash-dialog/open-cash-dialog.component';
 import { AddMoneyCashDialogComponent } from './add-money-cash-dialog/add-money-cash-dialog.component';
@@ -28,11 +28,10 @@ export class ActualCashComponent implements OnInit, OnDestroy {
 
   disableTooltips = new FormControl(false);
 
-  filteredOperations: Array<TicketProduct | TicketRawMaterial | DepartureProduct | DepartureRawMaterial> = [];
   filteredTransactions: Array<Transaction> = [];
   referenceTransactions: Array<Transaction> = [];
 
-  displayedColumns: string[] = ['index', 'regDate', 'type', 'description', 'import', 'verified', 'user', 'paymentType', 'originAccount', 'debt', 'approvedBy', 'actions'];
+  displayedColumns: string[] = ['index', 'regDate', 'type', 'description', 'import', 'verified', 'user', 'paymentType', 'destinationAccount', 'originAccount', 'debt', 'approvedBy', 'actions'];
   dataSource = new MatTableDataSource();
 
   @ViewChild(MatPaginator, { static: true }) paginator: MatPaginator;

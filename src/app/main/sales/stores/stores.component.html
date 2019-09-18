@@ -126,29 +126,37 @@
                             <ng-container matColumnDef="image">
                                 <th mat-header-cell style="padding:0px 8px" *matHeaderCellDef>Imagen</th>
                                 <td mat-cell style="padding:8px 8px" *matCellDef="let raw">
-                                    <a [href]="raw.image" target="_blank" style="cursor:pointer">
+                                    <a [href]="raw.image" rel="noopener noreferrer" target="_blank"
+                                        style="cursor:pointer">
                                         <img [src]="raw.image || '../../../assets/images/no-image.png'"
-                                            style="width:100px; height:75px"
-                                            class="mat-elevation-z4 w3-hover-shadow">
+                                            style="width:100px; height:75px" class="mat-elevation-z4 w3-hover-shadow">
                                     </a>
                                 </td>
                             </ng-container>
 
-                            <ng-container matColumnDef="correlative">
+                            <!-- <ng-container matColumnDef="correlative">
                                 <th mat-header-cell style="padding:0px 8px" *matHeaderCellDef
                                     matTooltip="Ordenar tabla por categoría" matTooltipPosition="above"
                                     [matTooltipDisabled]="!disableTooltips.value" mat-sort-header>Correlativo</th>
                                 <td mat-cell style="padding:0px 8px" *matCellDef="let raw">
                                     {{raw.correlative}}
                                 </td>
-                            </ng-container>
+                            </ng-container> -->
 
                             <ng-container matColumnDef="stock">
                                 <th mat-header-cell style="padding:0px 8px" *matHeaderCellDef
                                     matTooltip="Ordenar tabla por stock" matTooltipPosition="above"
                                     [matTooltipDisabled]="!disableTooltips.value" mat-sort-header>Stock</th>
                                 <td mat-cell style="padding:0px 8px" *matCellDef="let raw">
-                                        {{(raw.stock - serialNumbersInTransfering[raw.id] - serialNumbersSold[raw.id]) | number : '2.'}} <span *ngIf="serialNumbersInTransfering[raw.id]">({{serialNumbersInTransfering[raw.id] | number: '2.'}})</span>
+                                    <span *ngIf="calculatedStock[raw.id] !== null; else loader">
+                                        {{calculatedStock[raw.id] | number : '2.'}}
+                                    </span>
+                                    <ng-template #loader>
+                                        <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+                                    </ng-template>
+                                    <span *ngIf="serialNumbersInTransfering[raw.id]" style="width:100%">
+                                        ({{serialNumbersInTransfering[raw.id] | number: '2.'}})
+                                    </span>
                                 </td>
                             </ng-container>
 

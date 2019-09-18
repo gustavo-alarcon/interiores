@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormGroup, FormBuilder, Validators } from '@angular/forms';
 import { Observable, Subscription } from 'rxjs';
 import { Category, Unit } from 'src/app/core/types';
@@ -12,7 +12,7 @@ import { AuthService } from 'src/app/core/auth.service';
   templateUrl: './third-parties-wholesale-create-dialog.component.html',
   styles: []
 })
-export class ThirdPartiesWholesaleCreateDialogComponent implements OnInit {
+export class ThirdPartiesWholesaleCreateDialogComponent implements OnInit, OnDestroy {
 
   loading = false;
 
@@ -148,6 +148,10 @@ export class ThirdPartiesWholesaleCreateDialogComponent implements OnInit {
     this.subscriptions.push(ruc$);
   }
 
+  ngOnDestroy() {
+    this.subscriptions.forEach(sub => sub.unsubscribe());
+  }
+
   createForm(): void {
     this.dataFormGroup = this.fb.group({
       type: [null, [Validators.required]],
@@ -165,7 +169,7 @@ export class ThirdPartiesWholesaleCreateDialogComponent implements OnInit {
       contactName: null,
       contactPhone: null,
       contactMail: null
-    })
+    });
   }
 
   addContact(): void {

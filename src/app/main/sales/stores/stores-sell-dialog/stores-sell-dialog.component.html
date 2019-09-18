@@ -71,7 +71,10 @@
                             </mat-option>
 
                             <mat-option *ngFor="let item of filteredCustomers | async" [value]="item">
-                                    {{dataFormGroup.value['customerType'] === 'MAYORISTA' ? (item.businessName ? item.businessName : (item.name + (item.lastname ? (' ' + item.lastname) : '')) ) : item.name}}
+                                <mat-icon>
+                                    {{item.businessName ? 'domain' : 'account_circle'}}
+                                </mat-icon>
+                                {{dataFormGroup.value['customerType'] === 'MAYORISTA' ? (item.businessName ? item.businessName : (item.name + (item.lastname ? (' ' + item.lastname) : '')) ) : (item.businessName ? item.businessName : item.name)}}
                             </mat-option>
                         </mat-autocomplete>
                         <mat-hint>Requerido *</mat-hint>

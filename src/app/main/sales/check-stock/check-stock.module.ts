@@ -9,6 +9,7 @@ import { CheckStockSellDialogComponent } from './check-stock-sell-dialog/check-s
 import { CheckStockTransferDialogComponent } from './check-stock-transfer-dialog/check-stock-transfer-dialog.component';
 import { CheckStockCreateWholesaleDialogComponent } from './check-stock-create-wholesale-dialog/check-stock-create-wholesale-dialog.component';
 import { CheckStockCreateCustomerDialogComponent } from './check-stock-create-customer-dialog/check-stock-create-customer-dialog.component';
+import { CheckStockSeparateDialogComponent } from './check-stock-separate-dialog/check-stock-separate-dialog.component';
 
 @NgModule({
   declarations: [
@@ -16,7 +17,8 @@ import { CheckStockCreateCustomerDialogComponent } from './check-stock-create-cu
     CheckStockSellDialogComponent,
     CheckStockTransferDialogComponent,
     CheckStockCreateWholesaleDialogComponent,
-    CheckStockCreateCustomerDialogComponent
+    CheckStockCreateCustomerDialogComponent,
+    CheckStockSeparateDialogComponent
   ],
   imports: [
     CommonModule,
@@ -46,7 +48,8 @@ import { CheckStockCreateCustomerDialogComponent } from './check-stock-create-cu
     CheckStockSellDialogComponent,
     CheckStockTransferDialogComponent,
     CheckStockCreateWholesaleDialogComponent,
-    CheckStockCreateCustomerDialogComponent
+    CheckStockCreateCustomerDialogComponent,
+    CheckStockSeparateDialogComponent
   ]
 })
 export class CheckStockModule { }

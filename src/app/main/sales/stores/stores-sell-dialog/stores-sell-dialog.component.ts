@@ -1,4 +1,4 @@
-import { SerialNumber, Product, DepartureProduct, Store, Document, Cash, WholesaleCustomer, Customer } from './../../../../core/types';
+import { SerialNumber, Product, Departure, Store, Document, Cash, WholesaleCustomer, Customer } from './../../../../core/types';
 import { Component, OnInit, Inject } from '@angular/core';
 import { DatabaseService } from 'src/app/core/database.service';
 import { AuthService } from 'src/app/core/auth.service';
@@ -9,6 +9,7 @@ import { Observable, Subscription } from 'rxjs';
 import { isObjectValidator } from 'src/app/core/is-object-validator';
 import { StoresCreateWholesaleDialogComponent } from '../stores-create-wholesale-dialog/stores-create-wholesale-dialog.component';
 import { StoresCreateCustomerDialogComponent } from '../stores-create-customer-dialog/stores-create-customer-dialog.component';
+import { AngularFirestore } from '@angular/fire/firestore';
 
 @Component({
   selector: 'app-stores-sell-dialog',
@@ -38,6 +39,7 @@ export class StoresSellDialogComponent implements OnInit {
   constructor(
     public dbs: DatabaseService,
     public auth: AuthService,
+    private af: AngularFirestore,
     public fb: FormBuilder,
     private dialog: MatDialog,
     private dialogRef: MatDialogRef<StoresSellDialogComponent>,
@@ -140,7 +142,7 @@ export class StoresSellDialogComponent implements OnInit {
       if (customer.businessName) {
         return customer.businessName;
       } else if (customer.name) {
-        return customer.name  + (customer.lastname ? (' ' + customer.lastname) : '');
+        return customer.name + (customer.lastname ? (' ' + customer.lastname) : '');
       }
     } else {
       return null;
@@ -171,126 +173,161 @@ export class StoresSellDialogComponent implements OnInit {
   }
 
   save(): void {
-    this.loading = true;
     if (this.dataFormGroup.valid) {
+      this.loading = true;
 
-      const data: DepartureProduct = {
-        id: '',
-        document: this.dataFormGroup.value['document'],
-        documentSerial: this.dataFormGroup.value['documentSerial'],
-        documentCorrelative: this.dataFormGroup.value['documentCorrelative'],
-        product: this.data.product,
-        serie: this.data.serial.serie,
-        color: this.data.serial.color ? this.data.serial.color : '',
-        quantity: 1,
-        price: this.dataFormGroup.value['price'],
-        discount: (this.dataFormGroup.value['price'] / this.data.product.sale) * 100,
-        paymentType: this.dataFormGroup.value['paymentType'],
-        customerType: this.dataFormGroup.value['customerType'],
-        customer: this.dataFormGroup.value['customer'],
-        source: 'store',
-        regDate: Date.now(),
-        createdBy: this.auth.userInteriores.displayName,
-        createdByUid: this.auth.userInteriores.uid,
-        canceledBy: '',
-        canceldByUid: '',
-        canceledDate: null
-      }
+      const store = this.dbs.stores.filter(option => option.name === this.data.serial.location);
 
-      this.dbs.departuresCollection
-        .add(data)
-        .then(ref => {
-          ref.update({ id: ref.id })
+      /**
+       * SETTING REFERENCES
+       * -Product
+       * -Departure
+       * -Cash
+       */
+      const productReference =
+        this.dbs.storesCollection
+          .doc(store[0].id)
+          .collection('products')
+          .doc(this.data.product.id)
+          .collection('products')
+          .doc(this.data.serial.id);
+
+      const departureReference =
+        this.af.firestore.collection(this.dbs.departuresCollection.ref.path).doc();
+
+      const cashCollection =
+        this.dbs.cashListCollection
+          .doc(this.dataFormGroup.value['cash'].id)
+          .collection('openings')
+          .doc(this.dataFormGroup.value['cash'].currentOpening)
+          .collection('transactions');
+      const cashTransactionReference =
+        this.af.firestore.collection(cashCollection.ref.path).doc();
+
+      try {
+        this.af.firestore.runTransaction(t => {
+          return t.get(productReference.ref)
+            .then(doc => {
+
+              // ****************** READS AND PRE-SETS ********************
+              // PRODUCT READ ********
+              const status = doc.data().status;
+              const newStock =  doc.data().stock - 1;
+
+              if (status === 'Vendido') {
+                this.loading = false;
+                this.snackbar.open(`El número de serie #${this.data.serial.serie} ya fue vendido. Seleccione otro número de serie para continuar con la venta`, 'Cerrar', {
+                  duration: 10000
+                });
+              } else {
+                // PRODUCT **********
+                const product = {
+                  stock: newStock,
+                  status: 'Vendido',
+                  customer: this.dataFormGroup.value['customer'],
+                  departurePath: departureReference.path,
+                  cashTransactionPath: cashTransactionReference.path,
+                  soldBy: this.auth.userInteriores,
+                  saleDate: Date.now()
+                };
+
+                // DEPARTURE *********
+                const departure: Departure = {
+                  id: '',
+                  document: this.dataFormGroup.value['document'],
+                  documentSerial: this.dataFormGroup.value['documentSerial'],
+                  documentCorrelative: this.dataFormGroup.value['documentCorrelative'],
+                  product: this.data.product,
+                  serie: this.data.serial.serie,
+                  color: this.data.serial.color ? this.data.serial.color : null,
+                  quantity: 1,
+                  price: this.dataFormGroup.value['price'],
+                  discount: this.dataFormGroup.value['discount'],
+                  paymentType: this.dataFormGroup.value['paymentType'],
+                  destinationAccount: this.dataFormGroup.value['destinationAccount'],
+                  customerType: this.dataFormGroup.value['customerType'],
+                  customer: this.dataFormGroup.value['customer'],
+                  source: 'check stock',
+                  location: this.data.serial.location,
+                  productPath: productReference.ref.path,
+                  cashTransactionPath: cashTransactionReference.path,
+                  regDate: Date.now(),
+                  createdBy: this.auth.userInteriores.displayName,
+                  createdByUid: this.auth.userInteriores.uid,
+                  canceledBy: '',
+                  canceldByUid: '',
+                  canceledDate: null
+                }
+
+                // CASH TRANSACTION **********
+                let customerName;
+
+                if (this.dataFormGroup.value['customer']['businessName']) {
+                  customerName = this.dataFormGroup.value['customer']['businessName'];
+                } else {
+                  customerName = this.dataFormGroup.value['customer']['name'] + (this.dataFormGroup.value['customer']['lastname'] ? (' ' + this.dataFormGroup.value['customer']['lastname']) : '');
+                }
+
+                const cashTransaction = {
+                  id: '',
+                  regDate: Date.now(),
+                  type: 'VENTA',
+                  description: this.dataFormGroup.value['document']['name']
+                    + ', Serie ' + this.dataFormGroup.value['documentSerial']
+                    + ', Correlativo ' + this.dataFormGroup.value['documentCorrelative']
+                    + ', Tienda ' + this.data.serial.location
+                    + ', Producto ' + this.data.serial.name + '#' + this.data.serial.serie
+                    + ', Cliente ' + customerName
+                    + ', Dsct.  ' + this.dataFormGroup.value['discount'] + '%',
+                  import: this.dataFormGroup.value['price'],
+                  user: this.auth.userInteriores,
+                  verified: false,
+                  status: 'Grabado',
+                  ticketType: 'VENTA',
+                  paymentType: this.dataFormGroup.value['paymentType'],
+                  expenseType: null,
+                  departureType: null,
+                  originAccount: null,
+                  destinationAccount: this.dataFormGroup.value['destinationAccount'],
+                  debt: 0,
+                  departurePath: departureReference.path,
+                  productPath: productReference.ref.path,
+                  lastEditBy: null,
+                  lastEditUid: null,
+                  lastEditDate: null,
+                  approvedBy: null,
+                  approvedByUid: null,
+                  approvedDate: null,
+                }
+
+                // ******************* WRITE OPERATIONS ***********************
+                t.update(productReference.ref, product);
+                t.set(departureReference, departure);
+                t.set(cashTransactionReference, cashTransaction);
+              }
+            })
             .then(() => {
-              this.dbs.storesCollection
-                .doc(this.data.store.id)
-                .collection('products')
-                .doc(this.data.product.id)
-                .collection('products')
-                .doc(this.data.serial.id)
-                .update({ status: 'Vendido' }).
-                then(() => {
-                  this.loading = false;
-                  this.snackbar.open(`${this.data.serial.name} #${this.data.serial.serie} vendido!`, 'Cerrar', {
-                    duration: 6000
-                  });
-                  this.dialogRef.close(true);
-                })
-                .catch(err => {
-                  this.loading = false;
-                  this.snackbar.open('Parece que hubo un error actualizando el producto!', 'Cerrar', {
-                    duration: 6000
-                  });
-                  console.log(err);
-                })
+              this.loading = false;
+              this.snackbar.open(`${this.data.serial.name} #${this.data.serial.serie} vendido!`, 'Cerrar', {
+                duration: 6000
+              });
+              this.dialogRef.close(true);
             })
             .catch(err => {
               this.loading = false;
-              this.snackbar.open('Parece que hubo un error grabando el ID de venta!', 'Cerrar', {
+              console.log(err);
+              this.snackbar.open(`Parece que hubo un problema!`, 'Cerrar', {
                 duration: 6000
               });
-              console.log(err);
             })
         })
-        .catch(err => {
-          this.loading = false;
-          this.snackbar.open('Parece que hubo un error grabando el documento de venta!', 'Cerrar', {
-            duration: 6000
-          });
-          console.log(err);
+      } catch (err) {
+        this.loading = false;
+        console.log(err);
+        this.snackbar.open(`Ups!...parece que hubo un error, vuelva a preseionar el botón VENDER`, 'Cerrar', {
+          duration: 6000
         });
-
-      let customerName;
-
-      if (this.dataFormGroup.value['customer']['businessName']) {
-        customerName = this.dataFormGroup.value['customer']['businessName'];
-      } else {
-        customerName = this.dataFormGroup.value['customer']['name'] + (this.dataFormGroup.value['customer']['lastname'] ? (' ' + this.dataFormGroup.value['customer']['lastname']) : '');
       }
-
-      const transaction = {
-        id: '',
-        regDate: Date.now(),
-        type: 'VENTA',
-        description: this.dataFormGroup.value['document']['name']
-          + ', Serie ' + this.dataFormGroup.value['documentSerial']
-          + ', Correlativo ' + this.dataFormGroup.value['documentCorrelative']
-          + ', Producto ' + this.data.serial.name + '#' + this.data.serial.serie
-          + ', Cliente ' + customerName
-          + ', Dsct.  ' + this.dataFormGroup.value['discount'] + '%',
-        import: this.dataFormGroup.value['price'],
-        user: this.auth.userInteriores,
-        verified: false,
-        status: 'Grabado',
-        ticketType: 'VENTA',
-        paymentType: this.dataFormGroup.value['paymentType'],
-        expenseType: null,
-        departureType: null,
-        originAccount: null,
-        debt: 0,
-        lastEditBy: null,
-        lastEditUid: null,
-        lastEditDate: null,
-        approvedBy: null,
-        approvedByUid: null,
-        approvedDate: null,
-      }
-
-      this.dbs.cashListCollection
-        .doc(this.dataFormGroup.value['cash'].id)
-        .collection('openings')
-        .doc(this.dataFormGroup.value['cash'].currentOpening)
-        .collection('transactions')
-        .add(transaction)
-        .then(ref => {
-          ref.update({ id: ref.id });
-        })
-        .catch(err => {
-          console.log(err);
-          this.snackbar.open('Parece que hubo un error guardan la transacción!', 'Cerrar', {
-            duration: 6000
-          });
-        })
     }
 
   }

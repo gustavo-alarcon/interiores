@@ -1,0 +1,200 @@
+<div class="ms-font-montserrat mat-title">
+    <mat-icon class="ms-icons-color" style="vertical-align:middle">loyalty</mat-icon> Separar {{data.serial.name}}
+    #{{data.serial.serie}}
+</div>
+<mat-progress-bar mode="indeterminate" *ngIf="loading"></mat-progress-bar>
+
+<mat-dialog-content class="w3-margin-top">
+    <form [formGroup]="dataFormGroup">
+        <div class="w3-row">
+            <div class="w3-half">
+                <div class="w3-margin">
+                    <span class="ms-color-11 mat-subheading-1 w3-margin-bottom"><b>Documento</b></span>
+                    <mat-divider class="w3-margin-bottom"></mat-divider>
+
+                    <mat-form-field class="w3-margin-bottom w3-block" appearance="outline">
+                        <mat-label>Documento</mat-label>
+                        <mat-icon matSuffix>arrow_drop_down</mat-icon>
+                        <input matInput type="text" formControlName="document" [matAutocomplete]="documentAuto"
+                            placeholder="Escriba..." autocomplete="off">
+                        <mat-autocomplete #documentAuto="matAutocomplete" [displayWith]="showDocument">
+                            <mat-option *ngFor="let item of filteredDocuments | async" [value]="item">
+                                {{item.name}}
+                            </mat-option>
+                        </mat-autocomplete>
+                        <mat-hint>Requerido *</mat-hint>
+                        <mat-error *ngIf="!dataFormGroup.valid">Seleccione un documento *</mat-error>
+                    </mat-form-field><br>
+
+                    <mat-form-field class="w3-margin-bottom w3-block" appearance="outline">
+                        <mat-label>Serie</mat-label>
+                        <input matInput type="number" min="0" step="1" formControlName="documentSerial" placeholder="0"
+                            autocomplete="off">
+                        <mat-hint>Requerido *</mat-hint>
+                    </mat-form-field><br>
+
+                    <mat-form-field class="w3-margin-bottom w3-block" appearance="outline">
+                        <mat-label>Correlativo</mat-label>
+                        <input matInput type="number" min="0" step="1" formControlName="documentCorrelative"
+                            placeholder="0" autocomplete="off">
+                        <mat-hint>Requerido *</mat-hint>
+                    </mat-form-field><br>
+
+                    <div class="w3-block w3-margin-bottom" style="min-width: 300px">
+                        <label for="type">Seleccionar tipo de cliente</label><br>
+                        <mat-radio-group id="type" aria-label="Seleccionar tipo de mayorista"
+                            formControlName="customerType">
+                            <mat-radio-button value="MAYORISTA" class="w3-margin-right">MAYORISTA</mat-radio-button>
+                            <mat-radio-button value="GENERAL" class="w3-margin-right">GENERAL</mat-radio-button>
+                        </mat-radio-group>
+                    </div>
+
+                    <mat-form-field class="w3-margin-bottom w3-block animated fadeInRight" appearance="outline"
+                        *ngIf="dataFormGroup.value['customerType']">
+                        <mat-label>Cliente</mat-label>
+                        <mat-icon matSuffix>arrow_drop_down</mat-icon>
+                        <input matInput type="text" formControlName="customer" [matAutocomplete]="customerAuto"
+                            placeholder="Escriba..." autocomplete="off">
+                        <mat-autocomplete #customerAuto="matAutocomplete" [displayWith]="showCustomer">
+
+                            <mat-option style="padding: 0px 0px"
+                                *ngIf="dataFormGroup.value['customerType'] === 'MAYORISTA'">
+                                <button mat-button (click)="addWholesale()" class="w3-block" style="text-align: left">
+                                    <mat-icon style="margin: 0px 0px">add</mat-icon> Crear nuevo mayorista
+                                </button>
+                            </mat-option>
+
+                            <mat-option style="padding: 0px 0px"
+                                *ngIf="dataFormGroup.value['customerType'] === 'GENERAL'">
+                                <button mat-button (click)="addCustomer()" class="w3-block" style="text-align: left">
+                                    <mat-icon style="margin: 0px 0px">add</mat-icon> Crear nuevo cliente
+                                </button>
+                            </mat-option>
+
+                            <mat-option *ngFor="let item of filteredCustomers | async" [value]="item">
+                                <mat-icon>
+                                    {{item.businessName ? 'domain' : 'account_circle'}}
+                                </mat-icon>
+                                {{dataFormGroup.value['customerType'] === 'MAYORISTA' ? (item.businessName ? item.businessName : (item.name + (item.lastname ? (' ' + item.lastname) : '')) ) : (item.businessName ? item.businessName : item.name)}}
+                            </mat-option>
+                        </mat-autocomplete>
+                        <mat-hint>Requerido *</mat-hint>
+                        <mat-error *ngIf="!dataFormGroup.valid">Seleccione un cliente *</mat-error>
+                    </mat-form-field><br>
+
+                    <div class="w3-block w3-margin-bottom" style="min-width: 300px">
+                        <label for="customerData" *ngIf="dataFormGroup.value['customerType']">Datos</label><br>
+                        <div id="customerData"
+                            *ngIf="dataFormGroup.value['customerType'] === 'MAYORISTA' && dataFormGroup.value['customer']">
+                            <button mat-button disabled class="ms-color-11">
+                                <mat-icon>
+                                    {{dataFormGroup.value['customer']['businessName'] ? 'domain' : 'account_circle'}}
+                                </mat-icon>
+                                {{dataFormGroup.value['customer']['businessName'] ? dataFormGroup.value['customer']['businessName'] : ( dataFormGroup.value['customer']['name'] + (dataFormGroup.value['customer']['lastname'] ? (' ' + dataFormGroup.value['customer']['lastname']) : ''))}}
+                            </button>
+                            <button mat-button disabled class="ms-color-11">
+                                <mat-icon>
+                                    {{dataFormGroup.value['customer']['ruc'] ? 'chrome_reader_mode' : 'picture_in_picture'}}
+                                </mat-icon>
+                                {{dataFormGroup.value['customer']['ruc'] ? dataFormGroup.value['customer']['ruc'] : dataFormGroup.value['customer']['dni']}}
+                            </button>
+                            <button mat-button disabled class="ms-color-11">
+                                <mat-icon>
+                                    location_on
+                                </mat-icon>
+                                {{dataFormGroup.value['customer']['businessAddress'] ? dataFormGroup.value['customer']['businessAddress'] : dataFormGroup.value['customer']['address']}}
+                            </button>
+                        </div>
+                        <div id="customerData"
+                            *ngIf="dataFormGroup.value['customerType'] === 'GENERAL' && dataFormGroup.value['customer']">
+                            <button mat-button disabled class="ms-color-11">
+                                <mat-icon>
+                                    {{dataFormGroup.value['customer']['businessName'] ? 'domain' : 'account_circle'}}
+                                </mat-icon>
+                                {{dataFormGroup.value['customer']['businessName'] ? dataFormGroup.value['customer']['businessName'] : dataFormGroup.value['customer']['name']}}
+                            </button>
+                            <button mat-button disabled class="ms-color-11">
+                                <mat-icon>
+                                    {{dataFormGroup.value['customer']['ruc'] ? 'chrome_reader_mode' : 'picture_in_picture'}}
+                                </mat-icon>
+                                {{dataFormGroup.value['customer']['ruc'] ? dataFormGroup.value['customer']['ruc'] : dataFormGroup.value['customer']['dni']}}
+                            </button>
+                            <button mat-button disabled class="ms-color-11">
+                                <mat-icon>
+                                    location_on
+                                </mat-icon>
+                                {{dataFormGroup.value['customer']['businessAddress'] ? dataFormGroup.value['customer']['businessAddress'] : dataFormGroup.value['customer']['address']}}
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            <div class="w3-half">
+                <div class="w3-margin">
+                    <span class="ms-color-11 mat-subheading-1 w3-margin-bottom"><b>Información</b></span>
+                    <mat-divider class="w3-margin-bottom"></mat-divider>
+
+                    <mat-form-field class="w3-margin-right w3-block" appearance="outline">
+                        <mat-label>Importe <b>a cuenta</b> (S/.)</mat-label>
+                        <input matInput type="number" [min]="0" [max]="dataFormGroup.value['totalImport']"
+                            formControlName="paidImport" placeholder="0">
+                        <mat-hint>Requerido *</mat-hint>
+                        <mat-error *ngIf="!dataFormGroup.valid">Debe asignar un importe*</mat-error>
+                    </mat-form-field>
+
+                    <mat-form-field class="w3-margin-right w3-block" appearance="outline">
+                        <mat-label>Importe <b>en deuda</b> (S/.)</mat-label>
+                        <input matInput type="number" [min]="0" [max]="dataFormGroup.value['totalImport']"
+                            formControlName="indebtImport" placeholder="0" readonly>
+                        <mat-hint>Solo lectura</mat-hint>
+                        <mat-error *ngIf="!dataFormGroup.valid">Debe asignar un importe*</mat-error>
+                    </mat-form-field>
+
+                    <mat-form-field class="w3-margin-bottom w3-block" appearance="outline">
+                        <mat-label>Tipo de pago</mat-label>
+                        <mat-select formControlName="paymentType" placeholder="Seleccione...">
+                            <mat-option *ngFor="let option of paymentTypes" [value]="option">
+                                {{option}}
+                            </mat-option>
+                        </mat-select>
+                        <mat-hint>Requerido *</mat-hint>
+                    </mat-form-field><br>
+
+                    <mat-form-field class="w3-margin-bottom w3-block animated fadeInRight" appearance="outline"
+                        *ngIf="dataFormGroup.value['paymentType'] === 'TRANSFERENCIA'">
+                        <mat-label>Cuenta de destino</mat-label>
+                        <mat-select formControlName="destinationAccount" placeholder="Seleccione...">
+                            <mat-option *ngFor="let option of destinationAccounts" [value]="option">
+                                {{option}}
+                            </mat-option>
+                        </mat-select>
+                        <mat-hint>Requerido *</mat-hint>
+                    </mat-form-field><br>
+
+                    <mat-form-field class="w3-margin-bottom w3-block" appearance="outline">
+                        <mat-label>Caja destino</mat-label>
+                        <mat-icon matSuffix>arrow_drop_down</mat-icon>
+                        <input matInput type="text" formControlName="cash" [matAutocomplete]="cashAuto"
+                            placeholder="Nombre de caja" autocomplete="off">
+                        <mat-autocomplete #cashAuto [displayWith]="showCash">
+                            <mat-option *ngFor="let item of filteredCash | async" [value]="item"
+                                [disabled]="!item.open">
+                                {{item.name}}
+                            </mat-option>
+                        </mat-autocomplete>
+                        <mat-hint>Requerido *</mat-hint>
+                        <mat-error *ngIf="(filteredCash | async)?.length">Lista vacía</mat-error>
+                    </mat-form-field><br>
+                </div>
+            </div>
+        </div>
+    </form>
+</mat-dialog-content>
+
+<mat-divider class="w3-margin-top"></mat-divider>
+<mat-dialog-actions align="end">
+    <button mat-stroked-button class="w3-margin-right" color="warn" mat-dialog-close>Cancelar</button>
+    <button mat-raised-button class="w3-margin-right" color="primary" (click)="separate()"
+        [disabled]="!dataFormGroup.valid || destinationAccountRequired || loading">Separar</button>
+</mat-dialog-actions>

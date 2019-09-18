@@ -1,0 +1,151 @@
+<div class="ms-font-montserrat mat-title">
+    <mat-icon class="ms-icons-color" style="vertical-align:middle">shopping_cart</mat-icon> Vender {{data.separateProduct.serial ? data.separateProduct.serial.name : '---'}}
+    #{{data.separateProduct.serial ? data.separateProduct.serial.serie : '---'}}
+</div>
+<mat-progress-bar mode="indeterminate" *ngIf="loading"></mat-progress-bar>
+
+<mat-dialog-content class="w3-margin-top">
+    <form [formGroup]="dataFormGroup">
+        <div class="w3-row">
+            <div class="w3-half">
+                <div class="w3-margin">
+                    <span class="ms-color-11 mat-subheading-1 w3-margin-bottom"><b>Documento</b></span>
+                    <mat-divider class="w3-margin-bottom"></mat-divider>
+
+                    <mat-form-field class="w3-margin-bottom w3-block w3-small" appearance="outline">
+                        <mat-label>Documento</mat-label>
+                        <mat-icon matSuffix>arrow_drop_down</mat-icon>
+                        <input matInput type="text" formControlName="document" [matAutocomplete]="documentAuto"
+                            placeholder="Escriba..." autocomplete="off">
+                        <mat-autocomplete #documentAuto="matAutocomplete" [displayWith]="showDocument">
+                            <mat-option *ngFor="let item of filteredDocuments | async" [value]="item">
+                                {{item.name}}
+                            </mat-option>
+                        </mat-autocomplete>
+                        <mat-hint>Requerido *</mat-hint>
+                        <mat-error *ngIf="!dataFormGroup.valid">Seleccione un documento *</mat-error>
+                    </mat-form-field><br>
+
+                    <mat-form-field class="w3-margin-bottom w3-block w3-small" appearance="outline">
+                        <mat-label>Serie</mat-label>
+                        <input matInput type="number" min="0" step="1" formControlName="documentSerial" placeholder="0"
+                            autocomplete="off">
+                        <mat-hint>Requerido *</mat-hint>
+                    </mat-form-field><br>
+
+                    <mat-form-field class="w3-margin-bottom w3-block w3-small" appearance="outline">
+                        <mat-label>Correlativo</mat-label>
+                        <input matInput type="number" min="0" step="1" formControlName="documentCorrelative"
+                            placeholder="0" autocomplete="off">
+                        <mat-hint>Requerido *</mat-hint>
+                    </mat-form-field><br>
+
+                    <div class="w3-block w3-margin-bottom" style="min-width: 300px">
+                        <label for="customerData" *ngIf="dataFormGroup.value['customerType']">Datos</label><br>
+                        <div id="customerData"
+                            *ngIf="dataFormGroup.value['customerType'] === 'MAYORISTA' && dataFormGroup.value['customer']">
+                            <button mat-button disabled class="ms-color-11">
+                                <mat-icon>
+                                    {{dataFormGroup.value['customer']['businessName'] ? 'domain' : 'account_circle'}}
+                                </mat-icon>
+                                {{dataFormGroup.value['customer']['businessName'] ? dataFormGroup.value['customer']['businessName'] : ( dataFormGroup.value['customer']['name'] + (dataFormGroup.value['customer']['lastname'] ? (' ' + dataFormGroup.value['customer']['lastname']) : ''))}}
+                            </button>
+                            <button mat-button disabled class="ms-color-11">
+                                <mat-icon>
+                                    {{dataFormGroup.value['customer']['ruc'] ? 'chrome_reader_mode' : 'picture_in_picture'}}
+                                </mat-icon>
+                                {{dataFormGroup.value['customer']['ruc'] ? dataFormGroup.value['customer']['ruc'] : dataFormGroup.value['customer']['dni']}}
+                            </button>
+                            <button mat-button disabled class="ms-color-11">
+                                <mat-icon>
+                                    location_on
+                                </mat-icon>
+                                {{dataFormGroup.value['customer']['businessAddress'] ? dataFormGroup.value['customer']['businessAddress'] : dataFormGroup.value['customer']['address']}}
+                            </button>
+                        </div>
+                        <div id="customerData"
+                            *ngIf="dataFormGroup.value['customerType'] === 'GENERAL' && dataFormGroup.value['customer']">
+                            <button mat-button disabled class="ms-color-11">
+                                <mat-icon>account_circle</mat-icon>
+                                {{dataFormGroup.value['customer']['name']}}
+                            </button>
+                            <button mat-button disabled class="ms-color-11">
+                                <mat-icon>picture_in_picture</mat-icon>
+                                {{dataFormGroup.value['customer']['dni']}}
+                            </button>
+                            <button mat-button disabled class="ms-color-11">
+                                <mat-icon>location_on</mat-icon>
+                                {{dataFormGroup.value['customer']['address'] ? dataFormGroup.value['customer']['address'] : '---'}}
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            <div class="w3-half">
+                <div class="w3-margin">
+                    <span class="ms-color-11 mat-subheading-1 w3-margin-bottom"><b>Información</b></span>
+                    <mat-divider class="w3-margin-bottom"></mat-divider>
+
+                    <mat-form-field class="w3-margin-bottom w3-block w3-small" appearance="outline">
+                        <mat-label>Importe (S/.)</mat-label>
+                        <input matInput type="number" min="0" step="0.01" formControlName="price"
+                            [placeholder]="data.separateProduct.indebtImport | currency : 'S/.'" autocomplete="off">
+                        <mat-hint>Requerido *</mat-hint>
+                    </mat-form-field><br>
+
+                    <mat-form-field class="w3-margin-bottom w3-block w3-small" appearance="outline">
+                        <mat-label>Descuento</mat-label>
+                        <span matSuffix><b>%</b></span>
+                        <input matInput type="number" min="0" step="0.01" formControlName="discount" autocomplete="off"
+                            readonly>
+                        <mat-hint>Requerido *</mat-hint>
+                    </mat-form-field><br>
+
+                    <mat-form-field class="w3-margin-bottom w3-block w3-small" appearance="outline">
+                        <mat-label>Tipo de pago</mat-label>
+                        <mat-select formControlName="paymentType" placeholder="Seleccione...">
+                            <mat-option *ngFor="let option of paymentTypes" [value]="option">
+                                {{option}}
+                            </mat-option>
+                        </mat-select>
+                        <mat-hint>Requerido *</mat-hint>
+                    </mat-form-field><br>
+
+                    <mat-form-field class="w3-margin-bottom w3-block w3-small animated fadeInRight" appearance="outline"
+                        *ngIf="dataFormGroup.value['paymentType'] === 'TRANSFERENCIA'">
+                        <mat-label>Cuenta de destino</mat-label>
+                        <mat-select formControlName="destinationAccount" placeholder="Seleccione...">
+                            <mat-option *ngFor="let option of destinationAccounts" [value]="option">
+                                {{option}}
+                            </mat-option>
+                        </mat-select>
+                        <mat-hint>Requerido *</mat-hint>
+                    </mat-form-field><br>
+
+                    <mat-form-field class="w3-margin-bottom w3-block w3-small" appearance="outline">
+                        <mat-label>Caja destino</mat-label>
+                        <mat-icon matSuffix>arrow_drop_down</mat-icon>
+                        <input matInput type="text" formControlName="cash" [matAutocomplete]="cashAuto"
+                            placeholder="Nombre de caja" autocomplete="off">
+                        <mat-autocomplete #cashAuto [displayWith]="showCash">
+                            <mat-option *ngFor="let item of filteredCash | async" [value]="item"
+                                [disabled]="!item.open">
+                                {{item.name}}
+                            </mat-option>
+                        </mat-autocomplete>
+                        <mat-hint>Requerido *</mat-hint>
+                        <mat-error *ngIf="(filteredCash | async)?.length">Lista vacía</mat-error>
+                    </mat-form-field><br>
+                </div>
+            </div>
+        </div>
+    </form>
+</mat-dialog-content>
+
+<mat-divider class="w3-margin-top"></mat-divider>
+<mat-dialog-actions align="end">
+    <button mat-stroked-button class="w3-margin-right" color="warn" mat-dialog-close>Cancelar</button>
+    <button mat-raised-button class="w3-margin-right" color="primary" (click)="save()"
+        [disabled]="!dataFormGroup.valid || destinationAccountRequired|| loading">Vender</button>
+</mat-dialog-actions>

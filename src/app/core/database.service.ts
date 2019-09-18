@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { AngularFirestore, AngularFirestoreDocument, AngularFirestoreCollection } from "@angular/fire/firestore";
-import { Requirement, Correlative, Product, Color, RawMaterial, Category, Unit, ProductionOrder, TicketRawMaterial, DepartureRawMaterial, Store, User, Transfer, DepartureProduct, Quotation, Document, Cash, Purchase, Provider, WholesaleCustomer, Customer } from './types';
+import { Requirement, Correlative, Product, Color, RawMaterial, Category, Unit, ProductionOrder, TicketRawMaterial, Store, User, Transfer, Quotation, Document, Cash, Purchase, Provider, WholesaleCustomer, Customer, SystemActivityEvent, SalesCounter, SeparateProduct, CreditNote, Departure, SerialNumber } from './types';
 import { BehaviorSubject } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { AuthService } from './auth.service';
@@ -173,12 +173,12 @@ export class DatabaseService {
   public currentDataTickets = this.dataTickets.asObservable();
 
   /**
-   * DEPARTURES
+   * DEPARTURE
    */
-  departuresCollection: AngularFirestoreCollection<DepartureRawMaterial | DepartureProduct>;
-  departures: Array<DepartureRawMaterial | DepartureProduct> = [];
+  departuresCollection: AngularFirestoreCollection<Departure>;
+  departures: Array<Departure> = [];
 
-  public dataDepartures = new BehaviorSubject<(DepartureRawMaterial | DepartureProduct)[]>([]);
+  public dataDepartures = new BehaviorSubject<Departure[]>([]);
   public currentDataDepartures = this.dataDepartures.asObservable();
 
   /**
@@ -227,6 +227,16 @@ export class DatabaseService {
   public currentDataDebtsToPay = this.dataDebtsToPay.asObservable();
 
   /**
+   * CREDIT NOTES
+   */
+  creditNotesCollection: AngularFirestoreCollection<CreditNote>;
+  creditNotes: Array<CreditNote> = [];
+
+  public dataCreditNotes = new BehaviorSubject<CreditNote[]>([]);
+  public currentDataCreditNotes = this.dataCreditNotes.asObservable();
+
+
+  /**
    * PROVIDERS
    */
   providersCollection: AngularFirestoreCollection<Provider>;
@@ -254,6 +264,15 @@ export class DatabaseService {
   public currentDataCustomers = this.dataCustomers.asObservable();
 
   /**
+   * SEPARATE PRODUCTS
+   */
+  separateProductsCollection: AngularFirestoreCollection<SeparateProduct>;
+  separateProducts: Array<SeparateProduct> = [];
+
+  public dataSeparateProducts = new BehaviorSubject<SeparateProduct[]>([]);
+  public currentDataSeparateProducts = this.dataSeparateProducts.asObservable();
+
+  /**
    * RELEASE NOTES
    */
   releaseNotesDocument: AngularFirestoreDocument<any>;
@@ -262,6 +281,24 @@ export class DatabaseService {
   public dataReleaseNotes = new BehaviorSubject<any>('');
   public currentDataReleaseNotes = this.dataReleaseNotes.asObservable();
 
+  /**
+   * SYSTEM ACTIVITY LOGS
+   */
+  systemActivityLogsCollection: AngularFirestoreCollection<SystemActivityEvent>;
+  systemActivityLogs: Array<SystemActivityEvent> = [];
+
+  public dataSystemActivityLogs = new BehaviorSubject<SystemActivityEvent[]>([]);
+  public currentDataSystemActivityLogs = this.dataSystemActivityLogs.asObservable();
+
+  /**
+   * SYSTEM ACTIVITY SALES COUNTERS
+   */
+
+  systemActivityCounterSalesDocument: AngularFirestoreDocument<SalesCounter>;
+  systemActivityCounterSales: SalesCounter = null;
+
+  public dataSystemActivityCounterSales = new BehaviorSubject<SalesCounter>(null);
+  public currentDataSystemActivityCounterSales = this.dataSystemActivityCounterSales.asObservable();
 
 
 
@@ -274,6 +311,8 @@ export class DatabaseService {
     let fromMonth = date.getMonth();
     let fromYear = date.getFullYear();
 
+    /**MONTH */
+
     let from = new Date(fromYear, fromMonth, 1).valueOf();
 
     let toMonth = (fromMonth + 1) % 12;
@@ -284,6 +323,11 @@ export class DatabaseService {
     }
 
     let to = new Date(toYear, toMonth, 1).valueOf();
+
+    /**DAY */
+
+    let fromDay = new Date(fromYear, fromMonth, date.getDate()).getTime();
+    let toDay = fromDay + 86400000;
 
     this.auth.currentDataPermit.subscribe(res => {
       if (res.name) {
@@ -298,6 +342,7 @@ export class DatabaseService {
         this.getQuotations(from, to);
         this.getQuotationsCorrelative();
         this.getStores();
+        this.getSeparateProducts();
         this.getRawMaterials();
         this.getCategories();
         this.getUnits();
@@ -312,9 +357,13 @@ export class DatabaseService {
         this.getCashList();
         this.getDebtsToPay();
         this.getPurchases(from, to);
+        this.getCreditNotes(fromDay, toDay);
         this.getProviders();
         this.getWholesaleCustomers();
         this.getCustomers();
+
+        this.getSystemActivityLogs(fromDay, toDay);
+        this.getSystemActivityCounterSales();
       }
     })
 
@@ -355,7 +404,7 @@ export class DatabaseService {
   }
 
   getDocuments(): void {
-    this.documentsCollection = this.af.collection(`db/${this.auth.userInteriores.db}/documents`, ref => ref.orderBy('regDate', 'desc'));
+    this.documentsCollection = this.af.collection(`db/${this.auth.userInteriores.db}/documents`, ref => ref.orderBy('name', 'desc'));
     this.documentsCollection.valueChanges()
       .pipe(
         map(res => {
@@ -538,6 +587,151 @@ export class DatabaseService {
       });
   }
 
+  recalcStocks(): void {
+    this.stores.forEach(store => {
+      this.storesCollection
+        .doc(store.id)
+        .collection<Product>('products')
+        .get()
+        .forEach(products => {
+          products.forEach(product => {
+
+            this.storesCollection
+              .doc(store.id)
+              .collection<Product>('products')
+              .doc(product.id)
+              .collection<SerialNumber>('products')
+              .get()
+              .forEach(serials => {
+                let counter = 0;
+
+                serials.forEach(serial => {
+                  switch (serial.data().status) {
+                    case 'Acabado':
+                      counter++;
+                      break;
+
+                    case 'Exhibición':
+                      counter++;
+                      break;
+
+                    case 'Mantenimiento':
+                      counter++;
+                      break;
+
+                    case 'Separado':
+                      counter++;
+                      break;
+
+                    case 'Traslado':
+                      counter++;
+                      break;
+
+                    case 'Garantía':
+                      counter++;
+                      break;
+                  }
+                });
+
+                // console.log(store.name);
+                // console.log(product.data().name);
+                // console.log(counter);
+                // console.log('***********');
+                this.storesCollection
+                  .doc(store.id)
+                  .collection<Product>('products')
+                  .doc(product.id)
+                  .update({ stock: counter });
+              })
+
+
+          });
+
+        })
+    })
+
+    this.stores.forEach(store => {
+      this.finishedProductsCollection
+        .get()
+        .forEach(products => {
+          products.forEach(product => {
+
+            this.finishedProductsCollection
+              .doc(product.id)
+              .collection<SerialNumber>('products')
+              .get()
+              .forEach(serials => {
+                let counter = 0;
+
+                serials.forEach(serial => {
+                  switch (serial.data().status) {
+                    case 'Acabado':
+                      counter++;
+                      break;
+
+                    case 'Exhibición':
+                      counter++;
+                      break;
+
+                    case 'Mantenimiento':
+                      counter++;
+                      break;
+
+                    case 'Separado':
+                      counter++;
+                      break;
+
+                    case 'Traslado':
+                      counter++;
+                      break;
+
+                    case 'Garantía':
+                      counter++;
+                      break;
+                  }
+                });
+
+                // console.log(store.name);
+                // console.log(product.data().name);
+                // console.log(counter);
+                // console.log('***********');
+                this.finishedProductsCollection
+                  .doc(product.id)
+                  .update({ stock: counter });
+              })
+
+
+          });
+
+        })
+    })
+  }
+
+  getSeparateProducts(): void {
+    this.separateProductsCollection = this.af.collection(`db/${this.auth.userInteriores.db}/separateProducts`);
+    this.separateProductsCollection.valueChanges()
+      .pipe(
+        map(res => {
+          // order result from newer to oldest
+          return res.sort((a, b) => b['regDate'] - a['regDate']);
+        }),
+        map(res => {
+          // adding inverse index number, first item will have
+          // the total lenght number of the array.
+          res.forEach((element, index) => {
+            element['index'] = res.length - index;
+          });
+          return res;
+        })
+      )
+      .subscribe(res => {
+        if (res) {
+          this.separateProducts = res;
+          this.dataSeparateProducts.next(res);
+        }
+      })
+  }
+
   // *************************************** PRODUCTION *****************************************
 
   getRawMaterials(): void {
@@ -629,7 +823,7 @@ export class DatabaseService {
       .pipe(
         map(res => {
           res.forEach((element, index) => {
-            element['index'] = index;
+            element['index'] = res.length - index;
           });
           return res;
         })
@@ -771,6 +965,26 @@ export class DatabaseService {
       });
   }
 
+  getCreditNotes(from: number, to: number): void {
+    this.creditNotesCollection = this.af.collection(`db/${this.auth.userInteriores.db}/creditNotes`, ref => ref.where('regDate', '>=', from).where('regDate', '<=', to));
+    this.creditNotesCollection.valueChanges()
+      .pipe(
+        map(res => {
+          return res.sort((a, b) => b['regDate'] - a['regDate']);
+        }),
+        map(res => {
+          res.forEach((element, index) => {
+            element['index'] = res.length - index;
+          });
+          return res;
+        })
+      )
+      .subscribe(res => {
+        this.creditNotes = res;
+        this.dataCreditNotes.next(res);
+      });
+  }
+
 
   // ***************************** PURCHASES *******************
   getPurchases(from: number, to: number): void {
@@ -859,6 +1073,39 @@ export class DatabaseService {
       .subscribe(res => {
         this.customers = res;
         this.dataCustomers.next(res);
+      })
+  }
+
+  /************************************ REPORTS ********************************/
+
+  getSystemActivityLogs(from: number, to: number): void {
+    this.systemActivityLogsCollection = this.af.collection(`db/${this.auth.userInteriores.db}/systemActivityLogs`, ref => ref.where('regDate', '>=', from).where('regDate', '<=', to));
+    this.systemActivityLogsCollection.valueChanges()
+      .pipe(
+        map(res => {
+          return res.sort((a, b) => b['regDate'] - a['regDate']);
+        }),
+        map(res => {
+          res.forEach((element, index) => {
+            element['index'] = res.length - index;
+          });
+          return res;
+        })
+      )
+      .subscribe(res => {
+        if (res) {
+          this.systemActivityLogs = res;
+          this.dataSystemActivityLogs.next(res);
+        }
+      })
+  }
+
+  getSystemActivityCounterSales(): void {
+    this.systemActivityCounterSalesDocument = this.af.doc(`db/${this.auth.userInteriores.db}/systemActivityCounters/sales`);
+    this.systemActivityCounterSalesDocument.valueChanges()
+      .subscribe(res => {
+        this.systemActivityCounterSales = res;
+        this.dataSystemActivityCounterSales.next(res);
       })
   }
 

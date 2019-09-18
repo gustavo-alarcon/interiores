@@ -1,0 +1,71 @@
+<div class="ms-font-montserrat mat-title ms-color-11">
+    <mat-icon class="ms-icons-color" style="vertical-align:middle">cancel</mat-icon> Cancelar separación
+</div>
+<mat-divider></mat-divider>
+
+<mat-dialog-content style="max-width:300px">
+    <p class="ms-font-montserrat ms-color-11">¿Está seguro de cancelar la separación del producto:
+        <b>{{data.separateProduct.serial.name}}#{{data.separateProduct.serial.serie}}</b>?</p>
+
+    <mat-progress-bar mode="indeterminate" style="margin-bottom:0.5em" *ngIf="loading"></mat-progress-bar>
+
+    <form [formGroup]="dataFormGroup">
+
+        <div class="w3-block w3-margin-bottom w3-small">
+            <mat-radio-group id="type"
+                formControlName="cancellationReturnType">
+                <ng-container *ngIf="paymentApproved">
+                    <p class="w3-small">
+                        <mat-icon class="w3-text-gray" style="vertical-align:middle">info</mat-icon>
+                        La separación ya fue APROBADA en caja, se generará una NOTA DE CREDITO.
+                    </p>
+                    <mat-radio-button value="NOTA DE CREDITO" style="margin: 0.5em 0em">Solicitar nota de credito
+                    </mat-radio-button><br>
+                </ng-container>
+                <ng-container *ngIf="!paymentApproved">
+                    <p class="w3-small">
+                        <mat-icon class="w3-text-gray" style="vertical-align:middle">info</mat-icon>
+                        El primer pago aun no ha sido APROBADO en caja. El dinero puede ser devuelto.
+                    </p>
+                    <mat-radio-button value="DEVOLUCION" style="margin: 0.5em 0em">Solicitar devolución de dinero
+                    </mat-radio-button>
+                </ng-container>
+
+            </mat-radio-group>
+        </div>
+
+        <ng-container class="animated fadeInRight" *ngIf="dataFormGroup.value['cancellationReturnType'] === 'DEVOLUCION'">
+            <p class="w3-small">
+                <mat-icon class="w3-text-gray" style="vertical-align:middle">info</mat-icon> Seleccione la caja donde se
+                registrará la devolución de dinero. La caja deberá aprobar la devolución.
+            </p>
+            <mat-form-field class="ms-fill w3-margin-right w3-margin-bottom w3-block w3-small" appearance="outline">
+                <mat-label>Caja</mat-label>
+                <mat-icon matSuffix>arrow_drop_down</mat-icon>
+                <input matInput type="text" formControlName="cash" [matAutocomplete]="cashAuto" placeholder="Escriba..."
+                    autocomplete="off">
+                <mat-autocomplete #cashAuto="matAutocomplete" [displayWith]="showCash">
+                    <mat-option *ngFor="let item of filteredCashList | async" [value]="item" [disabled]="!item.open">
+                        {{item.name}}
+                    </mat-option>
+                </mat-autocomplete>
+                <mat-hint>Requerido *</mat-hint>
+                <mat-error *ngIf="!dataFormGroup.valid">Seleccione una caja *</mat-error>
+            </mat-form-field>
+        </ng-container>
+
+    </form>
+
+
+    <div style="display:flex; align-items:center" *ngIf="loading">
+        <mat-icon class="w3-margin-right" [ngStyle]="{'color': flags.canceled ? 'forestgreen' : 'gray'}">check_circle
+        </mat-icon>
+        <span class="w3-margin-right ms-font-montserrat w3-small">Cancelando separación</span>
+    </div>
+</mat-dialog-content>
+
+<mat-divider class="w3-margin-top"></mat-divider>
+<mat-dialog-actions align="end">
+    <button mat-stroked-button class="w3-margin-right" mat-dialog-close>No</button>
+    <button mat-raised-button color="warn" (click)="cancel()" [disabled]="!dataFormGroup.valid || loading || dataFormGroup.value['cancellationReturnType'] === null">Si, cancelar</button>
+</mat-dialog-actions>
