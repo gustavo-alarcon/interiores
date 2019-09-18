@@ -2,10 +2,10 @@ import { Component, OnInit, ViewChild, OnDestroy } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { DatabaseService } from 'src/app/core/database.service';
 import { AuthService } from 'src/app/core/auth.service';
-import { map, mergeMap } from 'rxjs/operators';
-import { Departure } from 'src/app/core/types';
+import { map, startWith } from 'rxjs/operators';
+import { Departure, User } from 'src/app/core/types';
 import { MatTableDataSource, MatPaginator, MatSort } from '@angular/material';
-import { Subscription } from 'rxjs';
+import { Subscription, Observable } from 'rxjs';
 
 @Component({
   selector: 'app-reports-sales',
@@ -21,6 +21,7 @@ export class ReportsSalesComponent implements OnInit, OnDestroy {
   filter = new FormControl();
 
   filteredDepartures: Array<Departure>;
+  filteredUsers: Observable<User[]>;
 
   totalImport = 0;
   totalDiscountedAmount = 0;
@@ -96,29 +97,51 @@ export class ReportsSalesComponent implements OnInit, OnDestroy {
         .subscribe(res => {
           if (res) {
             const from = this.fromFormControl.value.getTime();
-            const to = res;
+            const to = res.getTime();
             this.dbs.getDepartures(from, to);
           }
         });
 
     this.subscriptions.push(to$);
 
-    const user$ =
+    this.filteredUsers =
       this.user.valueChanges
-        .subscribe(res => {
-          if (res.uid) {
-
-          } else {
-
-          }
-        })
-
-    this.subscriptions.push(user$);
+        .pipe(
+          startWith<any>(''),
+          map(value => typeof value === 'string' ? value.toLowerCase() : value.displayName.toLowerCase()),
+          map(name => name ? this.dbs.users.filter(option => option.displayName.toLowerCase().includes(name)) : this.dbs.users)
+        );
 
   }
 
   ngOnDestroy() {
     this.subscriptions.forEach(sub => sub.unsubscribe());
+  }
+
+  filterData(ref): void {
+    this.dataSource.filter = ref.toLowerCase();
+  }
+
+  showUser(user: User): string | null {
+    return user ? user.displayName : null;
+  }
+
+  selectedUser(event): void {
+    const filteredByUser = this.filteredDepartures.filter(option => option.createdByUid === event.option.value.uid);
+
+    this.totalImport = 0;
+    this.totalDiscountedAmount = 0;
+
+    filteredByUser.forEach(element => {
+        if (element.discount) {
+          const discountedAmount = element.price * (100 - element.discount)/100;
+          element['discountedAmount'] = discountedAmount;
+          this.totalImport += element.price;
+          this.totalDiscountedAmount += discountedAmount;
+        }
+    });
+
+    this.dataSource.data = filteredByUser;
   }
 
 

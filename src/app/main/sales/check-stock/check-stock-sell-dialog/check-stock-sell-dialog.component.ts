@@ -250,6 +250,7 @@ export class CheckStockSellDialogComponent implements OnInit, OnDestroy {
               // ****************** READS AND PRE-SETS ********************
               // PRODUCT READ ********
               const status = doc.data().status;
+              const newStock =  doc.data().stock - 1;
 
               if (status === 'Vendido') {
                 this.loading = false;
@@ -259,6 +260,7 @@ export class CheckStockSellDialogComponent implements OnInit, OnDestroy {
               } else {
                 // PRODUCT **********
                 const product = {
+                  stock: newStock,
                   status: 'Vendido',
                   customer: this.dataFormGroup.value['customer'],
                   departurePath: departureReference.path,

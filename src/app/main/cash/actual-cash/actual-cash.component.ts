@@ -1,6 +1,6 @@
 import { Component, OnInit, ViewChild, OnDestroy } from '@angular/core';
 import { FormControl } from '@angular/forms';
-import { TicketProduct, TicketRawMaterial, Transaction, CurrentCash } from 'src/app/core/types';
+import { Transaction, CurrentCash } from 'src/app/core/types';
 import { MatTableDataSource, MatPaginator, MatSort, MatDialog, MatSnackBar } from '@angular/material';
 import { Subscription } from 'rxjs';
 import { DatabaseService } from 'src/app/core/database.service';

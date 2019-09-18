@@ -15,6 +15,8 @@ import { FinishedProductsChangeColorConfirmComponent } from '../finished-product
 })
 export class FinishedProductsShowSerieDialogComponent implements OnInit, OnDestroy {
 
+  loading: boolean = false;
+
   displayedColumns: string[] = ['serie', 'status', 'color', 'actions'];
   dataSource = new MatTableDataSource();
 
@@ -35,6 +37,8 @@ export class FinishedProductsShowSerieDialogComponent implements OnInit, OnDestr
     this.dataSource.paginator = this.paginator;
     this.dataSource.sort = this.sort;
 
+    this.loading = true;
+
     const serie$ =
       this.dbs.finishedProductsCollection
         .doc(this.data.id)
@@ -42,6 +46,7 @@ export class FinishedProductsShowSerieDialogComponent implements OnInit, OnDestr
         .valueChanges()
         .subscribe(res => {
           if (res) {
+            this.loading = false;
             this.dataSource.data = res;
           }
         });

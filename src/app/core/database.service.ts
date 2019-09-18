@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { AngularFirestore, AngularFirestoreDocument, AngularFirestoreCollection } from "@angular/fire/firestore";
-import { Requirement, Correlative, Product, Color, RawMaterial, Category, Unit, ProductionOrder, TicketRawMaterial, Store, User, Transfer, Quotation, Document, Cash, Purchase, Provider, WholesaleCustomer, Customer, SystemActivityEvent, SalesCounter, SeparateProduct, CreditNote, Departure } from './types';
+import { Requirement, Correlative, Product, Color, RawMaterial, Category, Unit, ProductionOrder, TicketRawMaterial, Store, User, Transfer, Quotation, Document, Cash, Purchase, Provider, WholesaleCustomer, Customer, SystemActivityEvent, SalesCounter, SeparateProduct, CreditNote, Departure, SerialNumber } from './types';
 import { BehaviorSubject } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { AuthService } from './auth.service';
@@ -585,6 +585,126 @@ export class DatabaseService {
         this.stores = res;
         this.dataStores.next(res);
       });
+  }
+
+  recalcStocks(): void {
+    this.stores.forEach(store => {
+      this.storesCollection
+        .doc(store.id)
+        .collection<Product>('products')
+        .get()
+        .forEach(products => {
+          products.forEach(product => {
+
+            this.storesCollection
+              .doc(store.id)
+              .collection<Product>('products')
+              .doc(product.id)
+              .collection<SerialNumber>('products')
+              .get()
+              .forEach(serials => {
+                let counter = 0;
+
+                serials.forEach(serial => {
+                  switch (serial.data().status) {
+                    case 'Acabado':
+                      counter++;
+                      break;
+
+                    case 'Exhibición':
+                      counter++;
+                      break;
+
+                    case 'Mantenimiento':
+                      counter++;
+                      break;
+
+                    case 'Separado':
+                      counter++;
+                      break;
+
+                    case 'Traslado':
+                      counter++;
+                      break;
+
+                    case 'Garantía':
+                      counter++;
+                      break;
+                  }
+                });
+
+                // console.log(store.name);
+                // console.log(product.data().name);
+                // console.log(counter);
+                // console.log('***********');
+                this.storesCollection
+                  .doc(store.id)
+                  .collection<Product>('products')
+                  .doc(product.id)
+                  .update({ stock: counter });
+              })
+
+
+          });
+
+        })
+    })
+
+    this.stores.forEach(store => {
+      this.finishedProductsCollection
+        .get()
+        .forEach(products => {
+          products.forEach(product => {
+
+            this.finishedProductsCollection
+              .doc(product.id)
+              .collection<SerialNumber>('products')
+              .get()
+              .forEach(serials => {
+                let counter = 0;
+
+                serials.forEach(serial => {
+                  switch (serial.data().status) {
+                    case 'Acabado':
+                      counter++;
+                      break;
+
+                    case 'Exhibición':
+                      counter++;
+                      break;
+
+                    case 'Mantenimiento':
+                      counter++;
+                      break;
+
+                    case 'Separado':
+                      counter++;
+                      break;
+
+                    case 'Traslado':
+                      counter++;
+                      break;
+
+                    case 'Garantía':
+                      counter++;
+                      break;
+                  }
+                });
+
+                // console.log(store.name);
+                // console.log(product.data().name);
+                // console.log(counter);
+                // console.log('***********');
+                this.finishedProductsCollection
+                  .doc(product.id)
+                  .update({ stock: counter });
+              })
+
+
+          });
+
+        })
+    })
   }
 
   getSeparateProducts(): void {

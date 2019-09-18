@@ -6,18 +6,17 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
-import { environment } from 'src/environments/environment';
-
 import { AngularFireModule } from '@angular/fire';
 import { AngularFirestoreModule } from '@angular/fire/firestore';
 import { AngularFireStorageModule } from '@angular/fire/storage';
 import { AngularFireAuthModule } from '@angular/fire/auth';
-import { AngularFirePerformanceModule } from '@angular/fire/performance';
 
 import { DatabaseService } from './core/database.service';
 import { AuthService } from './core/auth.service';
 import { LoginModule } from './login/login.module';
 import { MatPasswordStrengthModule } from '@angular-material-extensions/password-strength';
+import { ServiceWorkerModule } from '@angular/service-worker';
+import { environment } from '../environments/environment';
 
 @NgModule({
   declarations: [
@@ -33,7 +32,8 @@ import { MatPasswordStrengthModule } from '@angular-material-extensions/password
     AngularFireStorageModule,
     LoginModule,
     MatPasswordStrengthModule.forRoot(),
-    MatSnackBarModule
+    MatSnackBarModule,
+    ServiceWorkerModule.register('ngsw-worker.js', { enabled: environment.production })
   ],
   providers: [
     DatabaseService,

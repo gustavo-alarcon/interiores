@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, OnDestroy } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { Product, Store, SerialNumber } from 'src/app/core/types';
 import { MatTableDataSource, MatPaginator, MatSort, MatDialog, MatSnackBar } from '@angular/material';
@@ -13,7 +13,7 @@ import { StoresShowSerialsComponent } from './stores-show-serials/stores-show-se
   templateUrl: './stores.component.html',
   styles: []
 })
-export class StoresComponent implements OnInit {
+export class StoresComponent implements OnInit, OnDestroy {
 
   disableTooltips = new FormControl(false);
 
@@ -24,12 +24,14 @@ export class StoresComponent implements OnInit {
   filteredStores: Observable<Store[]>;
 
   serialNumbersInTransfering: object = {};
-  serialNumbersSold: object = {};
+  // serialNumbersSold: object = {};
+  calculatedStock: object = {};
+  calcDone = false;
 
   currentProductList: Array<Product>;
   currentStore: Store;
 
-  displayedColumns: string[] = ['index', 'code', 'name', 'category', 'description', 'image', 'correlative', 'stock', 'sale', 'actions'];
+  displayedColumns: string[] = ['index', 'code', 'name', 'category', 'description', 'image', 'stock', 'sale', 'actions'];
 
 
   dataSource = new MatTableDataSource();
@@ -56,6 +58,12 @@ export class StoresComponent implements OnInit {
         map(name => name ? this.dbs.stores.filter(option => option['name'].toLowerCase().includes(name)) : this.dbs.stores)
       );
 
+
+
+  }
+
+  ngOnDestroy() {
+    this.subscriptions.forEach(sub => sub.unsubscribe());
   }
 
   filterData(ref: string) {
@@ -67,6 +75,7 @@ export class StoresComponent implements OnInit {
       option.stock.toString().includes(ref) ||
       option.sale.toString().includes(ref));
     this.dataSource.data = this.filteredProducts;
+    this.dbs.recalcStocks();
   }
 
 
@@ -84,37 +93,42 @@ export class StoresComponent implements OnInit {
         .pipe(
           tap(res => {
             if (res) {
+              // LOOKING FOR SERIAL NUMBERS IN TRANSFER STATE
               this.serialNumbersInTransfering = {};
-              this.serialNumbersSold = {};
+              
+
               res.forEach(product => {
+
                 if (product.id) {
                   let transferCount = 0;
-                  let soldCount = 0;
+                  this.calculatedStock[product.id] = null;
+
                   this.dbs.storesCollection
                     .doc(this.currentStore.id)
                     .collection<Product>('products')
                     .doc(product.id)
-                    .collection('products')
-                    .get().forEach(snapshots => {
-                      snapshots.forEach(serial => {
-                        if (serial.data()['status'] === 'Traslado') {
-                          transferCount++;
-                        }
-                        if (serial.data()['status'] === 'Vendido') {
-                          soldCount++;
-                        }
+                    .collection<SerialNumber>('products', ref => ref.where('status', '==', 'Traslado'))
+                    .get()
+                    .forEach(snapshots => {
+                      this.calculatedStock[product.id] = product.stock;
+                      snapshots.forEach(snap => {
+                        transferCount++;
+                        this.calculatedStock[product.id] = product.stock - transferCount;
+                        this.serialNumbersInTransfering[product.id] = transferCount;
                       });
-                      this.serialNumbersInTransfering[product.id] = transferCount;
-                      this.serialNumbersSold[product.id] = soldCount;
+
                     });
                 }
+
               });
             }
           }),
           map(res => {
+
             res.forEach((element, index) => {
               element['index'] = index;
             });
+
             return res;
           })
         )
@@ -149,30 +163,33 @@ export class StoresComponent implements OnInit {
           .pipe(
             tap(res => {
               if (res) {
+                // LOOKING FOR SERIAL NUMBERS IN TRANSFER STATE
                 this.serialNumbersInTransfering = {};
-                this.serialNumbersSold = {};
+                
+  
                 res.forEach(product => {
+  
                   if (product.id) {
                     let transferCount = 0;
-                    let soldCount = 0;
+                    this.calculatedStock[product.id] = null;
+  
                     this.dbs.storesCollection
                       .doc(this.currentStore.id)
                       .collection<Product>('products')
                       .doc(product.id)
-                      .collection('products')
-                      .get().forEach(snapshots => {
-                        snapshots.forEach(serial => {
-                          if (serial.data()['status'] === 'Traslado') {
-                            transferCount++;
-                          }
-                          if (serial.data()['status'] === 'Vendido') {
-                            soldCount++;
-                          }
+                      .collection<SerialNumber>('products', ref => ref.where('status', '==', 'Traslado'))
+                      .get()
+                      .forEach(snapshots => {
+                        this.calculatedStock[product.id] = product.stock;
+                        snapshots.forEach(snap => {
+                          transferCount++;
+                          this.calculatedStock[product.id] = product.stock - transferCount;
+                          this.serialNumbersInTransfering[product.id] = transferCount;
                         });
-                        this.serialNumbersInTransfering[product.id] = transferCount;
-                        this.serialNumbersSold[product.id] = soldCount;
+  
                       });
                   }
+  
                 });
               }
             }),

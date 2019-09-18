@@ -14,7 +14,7 @@
                 <div>
 
                     <mat-form-field class="w3-margin-left">
-                        <input matInput [matDatepicker]="fromDay" [formControl]="fromFormControl">
+                        <input matInput [matDatepicker]="fromDay" [max]="toFormControl.value" [formControl]="fromFormControl">
                         <mat-datepicker-toggle matSuffix [for]="fromDay"></mat-datepicker-toggle>
                         <mat-datepicker #fromDay disabled="false">
                         </mat-datepicker>
@@ -24,9 +24,9 @@
                     </mat-form-field>
 
                     <mat-form-field class="w3-margin-left">
-                        <input matInput [matDatepicker]="toDay" [formControl]="toFormControl">
+                        <input matInput [matDatepicker]="toDay" [min]="fromFormControl.value" [formControl]="toFormControl">
                         <mat-datepicker-toggle matSuffix [for]="toDay"></mat-datepicker-toggle>
-                        <mat-datepicker #toDay disabled="false">
+                        <mat-datepicker #toDay disabled="false" >
                         </mat-datepicker>
                         <mat-hint>
                             <strong>Filtrar hasta este día</strong>
@@ -43,7 +43,7 @@
                         <mat-icon matSuffix style="vertical-align:bottom">arrow_drop_down</mat-icon>
                         <input matInput type="text" [formControl]="user" [matAutocomplete]="userAuto"
                             placeholder="Nombre..." autocomplete="off">
-                        <mat-autocomplete #userAuto="matAutocomplete" [displayWith]="showUser">
+                        <mat-autocomplete #userAuto="matAutocomplete" [displayWith]="showUser" (optionSelected)="selectedUser($event)">
                             <mat-option *ngFor="let item of filteredUsers | async" [value]="item">{{item.displayName}}
                             </mat-option>
                         </mat-autocomplete>
