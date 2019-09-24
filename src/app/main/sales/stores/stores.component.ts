@@ -43,8 +43,7 @@ export class StoresComponent implements OnInit, OnDestroy {
 
   constructor(
     public dbs: DatabaseService,
-    private dialog: MatDialog,
-    private snackbar: MatSnackBar
+    private dialog: MatDialog
   ) { }
 
   ngOnInit() {
@@ -57,8 +56,6 @@ export class StoresComponent implements OnInit, OnDestroy {
         map(value => typeof value === 'string' ? value.toLowerCase() : value.name.toLowerCase()),
         map(name => name ? this.dbs.stores.filter(option => option['name'].toLowerCase().includes(name)) : this.dbs.stores)
       );
-
-
 
   }
 
@@ -75,7 +72,7 @@ export class StoresComponent implements OnInit, OnDestroy {
       option.stock.toString().includes(ref) ||
       option.sale.toString().includes(ref));
     this.dataSource.data = this.filteredProducts;
-    this.dbs.recalcStocks();
+    // this.dbs.recalcStocks();
   }
 
 
