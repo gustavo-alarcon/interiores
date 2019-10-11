@@ -588,14 +588,16 @@ export class DatabaseService {
   }
 
   recalcStocks(): void {
+    console.log('Hola');
     this.stores.forEach(store => {
+      console.log('Store: ', store.name);
       this.storesCollection
         .doc(store.id)
         .collection<Product>('products')
         .get()
         .forEach(products => {
           products.forEach(product => {
-
+            console.log('Producto: ', product.data().name);
             this.storesCollection
               .doc(store.id)
               .collection<Product>('products')
@@ -604,7 +606,7 @@ export class DatabaseService {
               .get()
               .forEach(serials => {
                 let counter = 0;
-
+                // console.log(serials);
                 serials.forEach(serial => {
                   switch (serial.data().status) {
                     case 'Acabado':
@@ -623,6 +625,14 @@ export class DatabaseService {
                       counter++;
                       break;
 
+                    case 'Consignacion':
+                      counter++;
+                      break;
+
+                    case 'Vendido':
+                      counter++;
+                      break;
+
                     case 'Traslado':
                       counter++;
                       break;
@@ -633,10 +643,8 @@ export class DatabaseService {
                   }
                 });
 
-                // console.log(store.name);
-                // console.log(product.data().name);
-                // console.log(counter);
-                // console.log('***********');
+                console.log('Counter: ', counter)
+                console.log('***********');
                 this.storesCollection
                   .doc(store.id)
                   .collection<Product>('products')
@@ -650,61 +658,69 @@ export class DatabaseService {
         })
     })
 
-    this.stores.forEach(store => {
-      this.finishedProductsCollection
-        .get()
-        .forEach(products => {
-          products.forEach(product => {
+    // this.stores.forEach(store => {
+    //   this.finishedProductsCollection
+    //     .get()
+    //     .forEach(products => {
+    //       products.forEach(product => {
 
-            this.finishedProductsCollection
-              .doc(product.id)
-              .collection<SerialNumber>('products')
-              .get()
-              .forEach(serials => {
-                let counter = 0;
+    //         this.finishedProductsCollection
+    //           .doc(product.id)
+    //           .collection<SerialNumber>('products')
+    //           .get()
+    //           .forEach(serials => {
+    //             let counter = 0;
 
-                serials.forEach(serial => {
-                  switch (serial.data().status) {
-                    case 'Acabado':
-                      counter++;
-                      break;
+    //             serials.forEach(serial => {
+    //               switch (serial.data().status) {
+    //                 case 'Acabado':
+    //                   counter++;
+    //                   break;
 
-                    case 'Exhibición':
-                      counter++;
-                      break;
+    //                 case 'Exhibición':
+    //                   counter++;
+    //                   break;
 
-                    case 'Mantenimiento':
-                      counter++;
-                      break;
+    //                 case 'Mantenimiento':
+    //                   counter++;
+    //                   break;
 
-                    case 'Separado':
-                      counter++;
-                      break;
+    //                 case 'Separado':
+    //                   counter++;
+    //                   break;
 
-                    case 'Traslado':
-                      counter++;
-                      break;
+    //                 case 'Vendido':
+    //                   counter++;
+    //                   break;
 
-                    case 'Garantía':
-                      counter++;
-                      break;
-                  }
-                });
+    //                 case 'Consignación':
+    //                   counter++;
+    //                   break;
 
-                // console.log(store.name);
-                // console.log(product.data().name);
-                // console.log(counter);
-                // console.log('***********');
-                this.finishedProductsCollection
-                  .doc(product.id)
-                  .update({ stock: counter });
-              })
+    //                 case 'Traslado':
+    //                   counter++;
+    //                   break;
+
+    //                 case 'Garantía':
+    //                   counter++;
+    //                   break;
+    //               }
+    //             });
+
+    //             // console.log(store.name);
+    //             // console.log(product.data().name);
+    //             // console.log(counter);
+    //             // console.log('***********');
+    //             this.finishedProductsCollection
+    //               .doc(product.id)
+    //               .update({ stock: counter });
+    //           })
 
 
-          });
+    //       });
 
-        })
-    })
+    //     })
+    // })
   }
 
   getSeparateProducts(): void {
