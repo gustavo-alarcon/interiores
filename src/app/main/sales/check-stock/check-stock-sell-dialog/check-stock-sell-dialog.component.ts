@@ -10,6 +10,7 @@ import { isObjectValidator } from 'src/app/core/is-object-validator';
 import { CheckStockCreateWholesaleDialogComponent } from '../check-stock-create-wholesale-dialog/check-stock-create-wholesale-dialog.component';
 import { CheckStockCreateCustomerDialogComponent } from '../check-stock-create-customer-dialog/check-stock-create-customer-dialog.component';
 import { AngularFirestore } from '@angular/fire/firestore';
+import { firestore } from 'firebase';
 
 @Component({
   selector: 'app-check-stock-sell-dialog',
@@ -219,10 +220,17 @@ export class CheckStockSellDialogComponent implements OnInit, OnDestroy {
       /**
        * SETTING REFERENCES
        * -Product
+       * -Serial
        * -Departure
        * -Cash
        */
       const productReference =
+        this.dbs.storesCollection
+          .doc(store[0].id)
+          .collection('products')
+          .doc(this.data.product.id);
+
+      const serialReference =
         this.dbs.storesCollection
           .doc(store[0].id)
           .collection('products')
@@ -239,133 +247,138 @@ export class CheckStockSellDialogComponent implements OnInit, OnDestroy {
           .collection('openings')
           .doc(this.dataFormGroup.value['cash'].currentOpening)
           .collection('transactions');
+
       const cashTransactionReference =
         this.af.firestore.collection(cashCollection.ref.path).doc();
 
-      try {
-        this.af.firestore.runTransaction(t => {
-          return t.get(productReference.ref)
-            .then(doc => {
+      const decrement = firestore.FieldValue.increment(-1);
 
-              // ****************** READS AND PRE-SETS ********************
-              // PRODUCT READ ********
-              const status = doc.data().status;
-              const newStock =  doc.data().stock - 1;
+      // try {
+      this.af.firestore.runTransaction(t => {
+        return t.get(serialReference.ref)
+          .then(doc => {
 
-              if (status === 'Vendido') {
-                this.loading = false;
-                this.snackbar.open(`El producto: ${this.data.product.name}#${this.data.serial.serie} ya fue vendido. Seleccione otro número de serie para continuar con la venta`, 'Cerrar', {
-                  duration: 10000
-                });
-              } else {
-                // PRODUCT **********
-                const product = {
-                  stock: newStock,
-                  status: 'Vendido',
-                  customer: this.dataFormGroup.value['customer'],
-                  departurePath: departureReference.path,
-                  cashTransactionPath: cashTransactionReference.path,
-                  soldBy: this.auth.userInteriores,
-                  saleDate: Date.now()
-                };
+            // ****************** READS AND PRE-SETS ********************
+            // PRODUCT READ ********
+            const status = doc.data().status;
+            // HERE WE HAVE TO CHECK FOR MULTIPLE GETS !!!! ALSO IN THE STORE FUNCTION TO SELL
 
-                // DEPARTURE *********
-                const departure: Departure = {
-                  id: '',
-                  document: this.dataFormGroup.value['document'],
-                  documentSerial: this.dataFormGroup.value['documentSerial'],
-                  documentCorrelative: this.dataFormGroup.value['documentCorrelative'],
-                  product: this.data.product,
-                  serie: this.data.serial.serie,
-                  color: this.data.serial.color ? this.data.serial.color : null,
-                  quantity: 1,
-                  price: this.dataFormGroup.value['price'],
-                  discount: this.dataFormGroup.value['discount'],
-                  paymentType: this.dataFormGroup.value['paymentType'],
-                  destinationAccount: this.dataFormGroup.value['destinationAccount'],
-                  customerType: this.dataFormGroup.value['customerType'],
-                  customer: this.dataFormGroup.value['customer'],
-                  source: 'check stock',
-                  location: this.data.serial.location,
-                  productPath: productReference.ref.path,
-                  cashTransactionPath: cashTransactionReference.path,
-                  regDate: Date.now(),
-                  createdBy: this.auth.userInteriores.displayName,
-                  createdByUid: this.auth.userInteriores.uid,
-                  canceledBy: '',
-                  canceldByUid: '',
-                  canceledDate: null
-                }
+            if (status === 'Vendido') {
+              this.loading = false;
+              this.snackbar.open(`El producto: ${this.data.product.name}#${this.data.serial.serie} ya fue vendido. Seleccione otro número de serie para continuar con la venta`, 'Cerrar', {
+                duration: 10000
+              });
+              return Promise.reject(`El producto: ${this.data.product.name}#${this.data.serial.serie} ya fue vendido. Seleccione otro número de serie para continuar con la venta`)
 
-                // CASH TRANSACTION **********
-                let customerName;
+            } else {
+              // PRODUCT **********
+              const product = {
+                status: 'Vendido',
+                customer: this.dataFormGroup.value['customer'],
+                departurePath: departureReference.path,
+                cashTransactionPath: cashTransactionReference.path,
+                soldBy: this.auth.userInteriores,
+                saleDate: Date.now()
+              };
 
-                if (this.dataFormGroup.value['customer']['businessName']) {
-                  customerName = this.dataFormGroup.value['customer']['businessName'];
-                } else {
-                  customerName = this.dataFormGroup.value['customer']['name'] + (this.dataFormGroup.value['customer']['lastname'] ? (' ' + this.dataFormGroup.value['customer']['lastname']) : '');
-                }
-
-                const cashTransaction = {
-                  id: '',
-                  regDate: Date.now(),
-                  type: 'VENTA',
-                  description: this.dataFormGroup.value['document']['name']
-                    + ', Serie ' + this.dataFormGroup.value['documentSerial']
-                    + ', Correlativo ' + this.dataFormGroup.value['documentCorrelative']
-                    + ', Tienda ' + this.data.serial.location
-                    + ', Producto ' + this.data.serial.name + '#' + this.data.serial.serie
-                    + ', Cliente ' + customerName
-                    + ', Dsct.  ' + this.dataFormGroup.value['discount'] + '%',
-                  import: this.dataFormGroup.value['price'],
-                  user: this.auth.userInteriores,
-                  verified: false,
-                  status: 'Grabado',
-                  ticketType: 'VENTA',
-                  paymentType: this.dataFormGroup.value['paymentType'],
-                  expenseType: null,
-                  departureType: null,
-                  originAccount: null,
-                  destinationAccount: this.dataFormGroup.value['destinationAccount'],
-                  debt: 0,
-                  departurePath: departureReference.path,
-                  productPath: productReference.ref.path,
-                  lastEditBy: null,
-                  lastEditUid: null,
-                  lastEditDate: null,
-                  approvedBy: null,
-                  approvedByUid: null,
-                  approvedDate: null,
-                }
-
-                // ******************* WRITE OPERATIONS ***********************
-                t.update(productReference.ref, product);
-                t.set(departureReference, departure);
-                t.set(cashTransactionReference, cashTransaction);
+              // DEPARTURE *********
+              const departure: Departure = {
+                id: '',
+                document: this.dataFormGroup.value['document'],
+                documentSerial: this.dataFormGroup.value['documentSerial'],
+                documentCorrelative: this.dataFormGroup.value['documentCorrelative'],
+                product: this.data.product,
+                serie: this.data.serial.serie,
+                color: this.data.serial.color ? this.data.serial.color : null,
+                quantity: 1,
+                price: this.dataFormGroup.value['price'],
+                discount: this.dataFormGroup.value['discount'],
+                paymentType: this.dataFormGroup.value['paymentType'],
+                destinationAccount: this.dataFormGroup.value['destinationAccount'],
+                customerType: this.dataFormGroup.value['customerType'],
+                customer: this.dataFormGroup.value['customer'],
+                source: 'check stock',
+                location: this.data.serial.location,
+                productPath: serialReference.ref.path,
+                cashTransactionPath: cashTransactionReference.path,
+                regDate: Date.now(),
+                createdBy: this.auth.userInteriores.displayName,
+                createdByUid: this.auth.userInteriores.uid,
+                canceledBy: '',
+                canceldByUid: '',
+                canceledDate: null
               }
-            })
-            .then(() => {
-              this.loading = false;
-              this.snackbar.open(`${this.data.serial.name} #${this.data.serial.serie} vendido!`, 'Cerrar', {
-                duration: 6000
-              });
-              this.dialogRef.close(true);
-            })
-            .catch(err => {
-              this.loading = false;
-              console.log(err);
-              this.snackbar.open(`Parece que hubo un problema!`, 'Cerrar', {
-                duration: 6000
-              });
-            })
-        })
-      } catch (err) {
-        this.loading = false;
-        console.log(err);
-        this.snackbar.open(`Ups!...parece que hubo un error, vuelva a preseionar el botón VENDER`, 'Cerrar', {
-          duration: 6000
-        });
-      }
+
+              // CASH TRANSACTION **********
+              let customerName;
+
+              if (this.dataFormGroup.value['customer']['businessName']) {
+                customerName = this.dataFormGroup.value['customer']['businessName'];
+              } else {
+                customerName = this.dataFormGroup.value['customer']['name'] + (this.dataFormGroup.value['customer']['lastname'] ? (' ' + this.dataFormGroup.value['customer']['lastname']) : '');
+              }
+
+              const cashTransaction = {
+                id: '',
+                regDate: Date.now(),
+                type: 'VENTA',
+                description: this.dataFormGroup.value['document']['name']
+                  + ', Serie ' + this.dataFormGroup.value['documentSerial']
+                  + ', Correlativo ' + this.dataFormGroup.value['documentCorrelative']
+                  + ', Tienda ' + this.data.serial.location
+                  + ', Producto ' + this.data.serial.name + '#' + this.data.serial.serie
+                  + ', Cliente ' + customerName
+                  + ', Dsct.  ' + this.dataFormGroup.value['discount'] + '%',
+                import: this.dataFormGroup.value['price'],
+                user: this.auth.userInteriores,
+                verified: false,
+                status: 'Grabado',
+                ticketType: 'VENTA',
+                paymentType: this.dataFormGroup.value['paymentType'],
+                expenseType: null,
+                departureType: null,
+                originAccount: null,
+                destinationAccount: this.dataFormGroup.value['destinationAccount'],
+                debt: 0,
+                departurePath: departureReference.path,
+                productPath: serialReference.ref.path,
+                lastEditBy: null,
+                lastEditUid: null,
+                lastEditDate: null,
+                approvedBy: null,
+                approvedByUid: null,
+                approvedDate: null,
+              }
+
+              // ******************* WRITE OPERATIONS ***********************
+              t.update(productReference.ref, { stock: decrement });
+              t.update(serialReference.ref, product);
+              t.set(departureReference, departure);
+              t.set(cashTransactionReference, cashTransaction);
+            }
+          })
+          .then(() => {
+            this.loading = false;
+            this.snackbar.open(`${this.data.serial.name} #${this.data.serial.serie} vendido!`, 'Cerrar', {
+              duration: 6000
+            });
+            this.dialogRef.close(true);
+          })
+          .catch(err => {
+            this.loading = false;
+            console.log(err);
+            this.snackbar.open(`Parece que hubo un problema!`, 'Cerrar', {
+              duration: 6000
+            });
+          })
+      })
+      // } catch (err) {
+      //   this.loading = false;
+      //   console.log(err);
+      //   this.snackbar.open(`Ups!...parece que hubo un error, vuelva a preseionar el botón VENDER`, 'Cerrar', {
+      //     duration: 6000
+      //   });
+      // }
     }
   }
 
