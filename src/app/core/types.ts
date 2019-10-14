@@ -36,8 +36,15 @@ export interface Permit {
     productionProductionOrdersButton: boolean;
     productionQuotationsButton: boolean;
     productionRawMaterialsButton: boolean;
+    productionRawMaterialsCreateButton: boolean;
+    productionRawMaterialsSubstractAction: boolean;
+    productionRawMaterialsEditAction: boolean;
+    productionRawMaterialsDeleteAction: boolean;
     productionFinishedProductsButton: boolean;
+    productionFinishedProductsCreateButton: boolean;
     productionFinishedProductsTableSale: boolean;
+    productionFinishedProductsEditAction: boolean;
+    productionFinishedProductsDeleteAction: boolean;
     logisticSection: boolean;
     logisticTransfersButton: boolean;
     logisticTransfersCompleteList: boolean;

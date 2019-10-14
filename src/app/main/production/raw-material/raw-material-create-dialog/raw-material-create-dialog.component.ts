@@ -34,7 +34,9 @@ export class RawMaterialCreateDialogComponent implements OnInit, OnDestroy {
     public dbs: DatabaseService,
     private dialogRef: MatDialogRef<RawMaterialCreateDialogComponent>,
     private snackbar: MatSnackBar
-  ) { }
+  ) {
+    dialogRef.disableClose = true;
+  }
 
   ngOnInit() {
     this.createForm();

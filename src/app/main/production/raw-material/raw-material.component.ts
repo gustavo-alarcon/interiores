@@ -9,6 +9,7 @@ import { FormControl } from '@angular/forms';
 import { RawMaterialEditDialogComponent } from './raw-material-edit-dialog/raw-material-edit-dialog.component';
 import { RawMaterialDeleteConfirmComponent } from './raw-material-delete-confirm/raw-material-delete-confirm.component';
 import { RawMaterialSubstractStockDialogComponent } from './raw-material-substract-stock-dialog/raw-material-substract-stock-dialog.component';
+import { AuthService } from 'src/app/core/auth.service';
 
 @Component({
   selector: 'app-raw-material',
@@ -33,6 +34,7 @@ export class RawMaterialComponent implements OnInit {
 
   constructor(
     public dbs: DatabaseService,
+    public auth: AuthService,
     private dialog: MatDialog,
     private snackbar: MatSnackBar
   ) { }

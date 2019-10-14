@@ -5,7 +5,7 @@ import { Observable, Subscription } from 'rxjs';
 import { Category } from 'src/app/core/types';
 import { DatabaseService } from 'src/app/core/database.service';
 import { MatDialogRef, MatSnackBar, MatDialog } from '@angular/material';
-import { startWith, map, tap, debounceTime } from 'rxjs/operators';
+import { startWith, map, tap, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { AuthService } from 'src/app/core/auth.service';
 import { FinishedProductsCreateConfirmComponent } from '../finished-products-create-confirm/finished-products-create-confirm.component';
 import { Ng2ImgMaxService } from 'ng2-img-max';
@@ -59,10 +59,19 @@ export class FinishedProductsCreateDialogComponent implements OnInit, OnDestroy 
     const name$ =
       this.dataFormGroup.get('name').valueChanges
         .pipe(
+          // Take values that are different between them
+          distinctUntilChanged(),
+          // Initialize duplicate name as true
           tap(() => {
             this.duplicate.nameLoading = true;
           }),
+          // Waits for 500 milliseconds before processing the input
           debounceTime(500),
+          // Cuts the initial and final whitespaces
+          map(res => {
+            return res.trim().replace(/\s+/g, " ");
+          }),
+          // Looking for duplicated names
           tap(res => {
 
             this.duplicate.name = false;
@@ -77,6 +86,8 @@ export class FinishedProductsCreateDialogComponent implements OnInit, OnDestroy 
             } else {
               this.duplicate.nameLoading = false;
             }
+
+            this.dataFormGroup.get('name').setValue(res);
           })
         ).subscribe()
 
@@ -85,10 +96,19 @@ export class FinishedProductsCreateDialogComponent implements OnInit, OnDestroy 
     const code$ =
       this.dataFormGroup.get('code').valueChanges
         .pipe(
+          // Take values that are different between them
+          distinctUntilChanged(),
+          // Initialize duplicate code as true
           tap(() => {
             this.duplicate.codeLoading = true;
           }),
+          // Waits for 500 milliseconds before processing the input
           debounceTime(500),
+          // Cuts the initial and final whitespaces
+          map(res => {
+            return res.trim().replace(/\s/g, "");
+          }),
+          // Looking for duplicated codes
           tap(res => {
 
             this.duplicate.code = false;
@@ -103,6 +123,8 @@ export class FinishedProductsCreateDialogComponent implements OnInit, OnDestroy 
             } else {
               this.duplicate.codeLoading = false;
             }
+
+            this.dataFormGroup.get('code').setValue(res);
           })
         ).subscribe()
 

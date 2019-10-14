@@ -14,7 +14,7 @@
                 </div>
                 <div>
                     <button mat-raised-button class="ms-icons-color" style="margin:0em 0.2em 1em 0.2em"
-                        (click)="createFinishedProduct()">
+                        (click)="createFinishedProduct()" [disabled]="!auth.permit.productionRawMaterialsCreateButton">
                         <mat-icon>add_circle</mat-icon> Crear
                     </button>
                     <button mat-button style="margin:0em 0.2em 1em 0.2em" disabled>
@@ -141,16 +141,13 @@
                                             *ngIf="!raw.rawMaterialList" disabled>
                                             <mat-icon class="ms-icons-color">assignment</mat-icon> Asignar receta
                                         </button>
-                                        <!-- <button mat-menu-item (click)="addStock(raw)">
-                                            <mat-icon class="ms-icons-color">add_circle</mat-icon> Agregar stock
-                                        </button> -->
                                         <button mat-menu-item (click)="showProducts(raw)">
                                             <mat-icon class="ms-icons-color">money</mat-icon> Productos n/s
                                         </button>
-                                        <button mat-menu-item (click)="editFinishedProduct(raw)">
+                                        <button mat-menu-item (click)="editFinishedProduct(raw)" *ngIf="auth.permit.productionFinishedProductsEditAction">
                                             <mat-icon class="ms-icons-color">edit</mat-icon> Editar
                                         </button>
-                                        <button mat-menu-item (click)="deleteFinishedProduct(raw)">
+                                        <button mat-menu-item (click)="deleteFinishedProduct(raw)" *ngIf="auth.permit.productionFinishedProductsDeleteAction">
                                             <mat-icon class="ms-icons-color">delete</mat-icon> Borrar
                                         </button>
                                     </mat-menu>

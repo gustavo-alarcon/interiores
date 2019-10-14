@@ -32,7 +32,9 @@ export class FinishedProductsCreateConfirmComponent implements OnInit {
     private snackbar: MatSnackBar,
     private dialogRef: MatDialogRef<FinishedProductsCreateConfirmComponent>,
     @Inject(MAT_DIALOG_DATA) public data: { form: any, image: any }
-  ) { }
+  ) {
+    dialogRef.disableClose = true;
+  }
 
   ngOnInit() {
   }
