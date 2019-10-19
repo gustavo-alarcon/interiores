@@ -245,7 +245,7 @@ export class StoresSellDialogComponent implements OnInit {
 
               // DEPARTURE *********
               const departure: Departure = {
-                id: '',
+                id: departureReference.id,
                 document: this.dataFormGroup.value['document'],
                 documentSerial: this.dataFormGroup.value['documentSerial'],
                 documentCorrelative: this.dataFormGroup.value['documentCorrelative'],
@@ -281,7 +281,7 @@ export class StoresSellDialogComponent implements OnInit {
               }
 
               const cashTransaction = {
-                id: '',
+                id: cashTransactionReference.id,
                 regDate: Date.now(),
                 type: 'VENTA',
                 description: this.dataFormGroup.value['document']['name']

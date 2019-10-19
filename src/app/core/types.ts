@@ -67,7 +67,8 @@ export interface Permit {
     cashManageDeleteAction: boolean;
     cashManageCreateButton: boolean;
     cashDebtsToPayButton: boolean;
-    cashDebtsToPayPayAction: boolean;
+    cashDebtsToPayTotalPayAction: boolean;
+    cashDebtsToPayPartialPayAction: boolean;
     purchasesSection: boolean;
     purchasesRegisterDocumentsButton: boolean;
     purchasesRegisterDocumentsCreateButton: boolean;
