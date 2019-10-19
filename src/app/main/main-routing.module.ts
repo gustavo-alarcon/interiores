@@ -43,9 +43,13 @@ const routes: Routes = [
         path: 'sales/stores',
         loadChildren: () => import('./sales/stores/stores.module').then(mod => mod.StoresModule)
       },
+      // {
+      //   path: 'sales/separate-products',
+      //   loadChildren: () => import('./sales/separate-products/separate-products.module').then(mod => mod.SeparateProductsModule)
+      // },
       {
-        path: 'sales/separate-products',
-        loadChildren: () => import('./sales/separate-products/separate-products.module').then(mod => mod.SeparateProductsModule)
+        path: 'sales/history',
+        loadChildren: () => import('./sales/sales-history/sales-history.module').then(mod => mod.SalesHistoryModule)
       },
       {
         path: 'production/requirements',

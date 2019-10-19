@@ -329,6 +329,9 @@ export class DatabaseService {
     let fromDay = new Date(fromYear, fromMonth, date.getDate()).getTime();
     let toDay = fromDay + 86400000;
 
+    const f_current = (new Date()).setHours(0, 0, 0, 0);
+    const t_current = (new Date()).setHours(23, 59, 59, 0);
+
     this.auth.currentDataPermit.subscribe(res => {
       if (res.name) {
         this.getReleaseNotes();
@@ -349,7 +352,7 @@ export class DatabaseService {
         this.getProductionOrders(from, to);
         this.getProductionOrdersCorrelative();
         this.getTickets(from, to);
-        this.getDepartures(from, to);
+        this.getDepartures(null, f_current, t_current);
         this.getFinishedProducts();
         this.getTransfers(from, to);
         this.getTransfersCorrelative();
@@ -832,11 +835,40 @@ export class DatabaseService {
       })
   }
 
-  getDepartures(from?: number, to?: number): void {
+  getDepartures(uid: any, from?: number, to?: number): void {
     this.departuresCollection = this.af.collection(`db/${this.auth.userInteriores.db}/departures`, ref => ref.where('regDate', '>=', from).where('regDate', '<=', to));
 
     this.departuresCollection.valueChanges()
       .pipe(
+        // filtering departures from store or check stock
+        map(res => {
+          let filtered = [];
+          res.forEach(element => {
+            if (element.source === 'store' || element.source === 'check stock') {
+              filtered.push(element);
+            }
+          });
+          return filtered;
+        }),
+        // filter by user logged or sourced
+        map(res => {
+          if (uid !== 'TODOS') {
+            let filtered = [];
+            res.forEach(element => {
+              if (element.createdByUid === uid) {
+                filtered.push(element);
+              }
+            });
+            return filtered;
+          } else {
+            return res;
+          }
+        }),
+        // order result from newer to oldest
+        map(res => {
+          return res.sort((a, b) => b['regDate'] - a['regDate']);
+        }),
+        // adding index value to every record
         map(res => {
           res.forEach((element, index) => {
             element['index'] = res.length - index;

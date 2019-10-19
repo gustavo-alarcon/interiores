@@ -104,6 +104,7 @@ export class MenuComponent implements OnInit, OnDestroy {
       salesSeparateProductsCancelAction: false,
       salesSeparateProductsChangeSerialAction: false,
       salesHistoryButton: false,
+      salesHistoryUserFilter: false,
       productionSection: false,
       productionRequirementsButton: false,
       productionOrdersButton: false,

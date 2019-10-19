@@ -26,6 +26,7 @@ export class TransactionApproveConfirmComponent implements OnInit {
   ) { }
 
   ngOnInit() {
+    console.log(this.data);
   }
 
   approve(): void {

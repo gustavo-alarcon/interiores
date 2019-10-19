@@ -30,6 +30,7 @@ export interface Permit {
     salesSeparateProductsCancelAction: boolean;
     salesSeparateProductsChangeSerialAction: boolean;
     salesHistoryButton: boolean;
+    salesHistoryUserFilter: boolean;
     productionSection: boolean;
     productionRequirementsButton: boolean;
     productionOrdersButton: boolean;
