@@ -271,6 +271,9 @@ export class CheckStockSellDialogComponent implements OnInit, OnDestroy {
               return Promise.reject(`El producto: ${this.data.product.name}#${this.data.serial.serie} ya fue vendido. Seleccione otro número de serie para continuar con la venta`)
 
             } else {
+              // GENERATING IDS
+              
+
               // PRODUCT **********
               const product = {
                 status: 'Vendido',
@@ -283,7 +286,7 @@ export class CheckStockSellDialogComponent implements OnInit, OnDestroy {
 
               // DEPARTURE *********
               const departure: Departure = {
-                id: '',
+                id: departureReference.id,
                 document: this.dataFormGroup.value['document'],
                 documentSerial: this.dataFormGroup.value['documentSerial'],
                 documentCorrelative: this.dataFormGroup.value['documentCorrelative'],
@@ -319,7 +322,7 @@ export class CheckStockSellDialogComponent implements OnInit, OnDestroy {
               }
 
               const cashTransaction = {
-                id: '',
+                id: cashTransactionReference.id,
                 regDate: Date.now(),
                 type: 'VENTA',
                 description: this.dataFormGroup.value['document']['name']
@@ -353,7 +356,7 @@ export class CheckStockSellDialogComponent implements OnInit, OnDestroy {
               // ******************* WRITE OPERATIONS ***********************
               t.update(productReference.ref, { stock: decrement });
               t.update(serialReference.ref, product);
-              t.set(departureReference, departure);
+              t.set(departureReference, departure)
               t.set(cashTransactionReference, cashTransaction);
             }
           })
