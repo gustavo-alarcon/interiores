@@ -67,7 +67,7 @@
 
                 <div style="display: flex; flex-wrap: wrap; align-items: center;">
                     <span class="mat-title w3-margin">Total vendido: <b>{{totalSold | currency: 'S/.'}}</b></span>
-                    <button mat-raised-button class="w3-margin" color="primary" (click)="downloadCSV()">
+                    <button mat-raised-button class="w3-margin" color="primary" (click)="downloadXlsx()" [disabled]="!dataSource.data.length">
                         <mat-icon style="vertical-align: middle">cloud_download</mat-icon> Descargar
                     </button>
                 </div>

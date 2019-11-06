@@ -17,6 +17,7 @@ import { LoginModule } from './login/login.module';
 import { MatPasswordStrengthModule } from '@angular-material-extensions/password-strength';
 import { ServiceWorkerModule } from '@angular/service-worker';
 import { environment } from '../environments/environment';
+import { DatePipe } from '@angular/common';
 
 @NgModule({
   declarations: [
@@ -37,7 +38,8 @@ import { environment } from '../environments/environment';
   ],
   providers: [
     DatabaseService,
-    AuthService
+    AuthService,
+    DatePipe
   ],
   bootstrap: [AppComponent]
 })

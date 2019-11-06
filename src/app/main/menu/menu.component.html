@@ -36,7 +36,7 @@
                 <button mat-menu-item>
                     <mat-icon>info</mat-icon> Ayuda
                 </button>
-                <button mat-menu-item (click)="openReleaseNotes()">version 1.5.4b</button>
+                <button mat-menu-item (click)="openReleaseNotes()">version 1.5.5b</button>
             </mat-menu>
         </div>
 
@@ -78,8 +78,8 @@
                         </div>
                         <div class="w3-margin-right">
                             <button mat-button class="w3-small"
-                                [ngClass]="{'ms-button-selected': buttonOptions.sales.separateProducts}" routerLink="sales/separate-products"
-                                [disabled]="!permits.salesSeparateProductsButton">
+                                [ngClass]="{'ms-button-selected': buttonOptions.sales.separateProducts}"
+                                routerLink="sales/separate-products" [disabled]="!permits.salesSeparateProductsButton">
                                 <mat-icon class="ms-icons-color">loyalty</mat-icon> Separaciones
                             </button><br>
                             <button mat-button class="w3-small"
@@ -325,11 +325,17 @@
                     </button>
                     <button mat-button class="w3-block w3-text-white ms-expansion-panel-menu w3-hover-text-purple"
                         [ngClass]="{'ms-button-selected': buttonOptions.sales.checkStock}"
-                        routerLink="sales/check-stock"
-                        style="text-align:left;border-radius:0px 0px 0px 0px;padding-bottom:1em"
+                        routerLink="sales/check-stock" style="text-align:left;border-radius:0px 0px 0px 0px"
                         (click)="toggleSideMenu()" *ngIf="permits.salesCheckStockButton">
                         <mat-icon style="vertical-align: middle; margin-right:0.2em;margin-left:1.5em">search
                         </mat-icon> Consultar stock
+                    </button>
+                    <button mat-button class="w3-block w3-text-white ms-expansion-panel-menu w3-hover-text-purple"
+                        [ngClass]="{'ms-button-selected': buttonOptions.sales.history}" routerLink="sales/history"
+                        style="text-align:left;border-radius:0px 0px 0px 0px;padding-bottom:1em"
+                        (click)="toggleSideMenu()" *ngIf="permits.salesHistoryButton">
+                        <mat-icon style="vertical-align: middle; margin-right:0.2em;margin-left:1.5em">history
+                        </mat-icon> Historial
                     </button>
                     <p class="w3-margin-bottom"></p>
 
@@ -465,36 +471,39 @@
 
                 </mat-expansion-panel>
                 <mat-expansion-panel style="width:15em; box-shadow:none; border-radius:0px 0px 0px 0px"
-                    class="w3-border-top w3-border-light-grey" [ngClass]="{'ms-expansion-panel-menu':thirdPartiesOpenedFlag}"
-                    (opened)="thirdPartiesOpened()" (closed)="thirdPartiesClosed()">
+                    class="w3-border-top w3-border-light-grey"
+                    [ngClass]="{'ms-expansion-panel-menu':thirdPartiesOpenedFlag}" (opened)="thirdPartiesOpened()"
+                    (closed)="thirdPartiesClosed()">
                     <mat-expansion-panel-header *ngIf="permits.thirdPartiesSection">
                         <mat-panel-title style="font-weight:500"
                             [ngClass]="{'ms-expansion-panel-title':thirdPartiesOpenedFlag}">
-                            <mat-icon style="vertical-align:middle; margin-right:0.3em">supervised_user_circle</mat-icon>
+                            <mat-icon style="vertical-align:middle; margin-right:0.3em">supervised_user_circle
+                            </mat-icon>
                             Terceros
                         </mat-panel-title>
                     </mat-expansion-panel-header>
 
                     <button mat-button class="w3-block w3-text-white ms-expansion-panel-menu w3-hover-text-purple"
-                        [ngClass]="{'ms-button-selected': buttonOptions.thirdParties.wholesale}" routerLink="third-parties/wholesale"
-                        style="text-align:left;border-radius:0px 0px 0px 0px" (click)="toggleSideMenu()"
-                        *ngIf="permits.thirdPartiesWholesaleButton">
+                        [ngClass]="{'ms-button-selected': buttonOptions.thirdParties.wholesale}"
+                        routerLink="third-parties/wholesale" style="text-align:left;border-radius:0px 0px 0px 0px"
+                        (click)="toggleSideMenu()" *ngIf="permits.thirdPartiesWholesaleButton">
                         <mat-icon style="vertical-align: middle; margin-right:0.2em;margin-left:1.5em">
                             work
                         </mat-icon> Mayoristas
                     </button>
 
                     <button mat-button class="w3-block w3-text-white ms-expansion-panel-menu w3-hover-text-purple"
-                        [ngClass]="{'ms-button-selected': buttonOptions.thirdParties.providers}" routerLink="third-parties/providers"
-                        style="text-align:left;border-radius:0px 0px 0px 0px" (click)="toggleSideMenu()"
-                        *ngIf="permits.thirdPartiesProvidersButton">
+                        [ngClass]="{'ms-button-selected': buttonOptions.thirdParties.providers}"
+                        routerLink="third-parties/providers" style="text-align:left;border-radius:0px 0px 0px 0px"
+                        (click)="toggleSideMenu()" *ngIf="permits.thirdPartiesProvidersButton">
                         <mat-icon style="vertical-align: middle; margin-right:0.2em;margin-left:1.5em">
                             local_convenience_store
                         </mat-icon> Proveedores
                     </button>
 
                     <button mat-button class="w3-block w3-text-white ms-expansion-panel-menu w3-hover-text-purple"
-                        [ngClass]="{'ms-button-selected': buttonOptions.thirdParties.customers}" routerLink="third-parties/customers"
+                        [ngClass]="{'ms-button-selected': buttonOptions.thirdParties.customers}"
+                        routerLink="third-parties/customers"
                         style="text-align:left;border-radius:0px 0px 0px 0px;padding-bottom:1em"
                         (click)="toggleSideMenu()" *ngIf="permits.thirdPartiesCustomersButton">
                         <mat-icon style="vertical-align: middle; margin-right:0.2em;margin-left:1.5em">
@@ -517,18 +526,18 @@
                     </mat-expansion-panel-header>
 
                     <button mat-button class="w3-block w3-text-white ms-expansion-panel-menu w3-hover-text-purple"
-                        [ngClass]="{'ms-button-selected': buttonOptions.reports.systemStats}" routerLink="reports/system-stats"
-                        style="text-align:left;border-radius:0px 0px 0px 0px" (click)="toggleSideMenu()"
-                        *ngIf="permits.reportsSystemStatsButton">
+                        [ngClass]="{'ms-button-selected': buttonOptions.reports.systemStats}"
+                        routerLink="reports/system-stats" style="text-align:left;border-radius:0px 0px 0px 0px"
+                        (click)="toggleSideMenu()" *ngIf="permits.reportsSystemStatsButton">
                         <mat-icon style="vertical-align: middle; margin-right:0.2em;margin-left:1.5em">
                             assessment
                         </mat-icon> Estadísticas Sis.
                     </button>
 
                     <button mat-button class="w3-block w3-text-white ms-expansion-panel-menu w3-hover-text-purple"
-                        [ngClass]="{'ms-button-selected': buttonOptions.reports.systemActivity}" routerLink="reports/system-activity"
-                        style="text-align:left;border-radius:0px 0px 0px 0px" (click)="toggleSideMenu()"
-                        *ngIf="permits.reportsSystemActivityButton">
+                        [ngClass]="{'ms-button-selected': buttonOptions.reports.systemActivity}"
+                        routerLink="reports/system-activity" style="text-align:left;border-radius:0px 0px 0px 0px"
+                        (click)="toggleSideMenu()" *ngIf="permits.reportsSystemActivityButton">
                         <mat-icon style="vertical-align: middle; margin-right:0.2em;margin-left:1.5em">
                             touch_app
                         </mat-icon> Actividad del Sis.
@@ -553,7 +562,8 @@
                     </button>
 
                     <button mat-button class="w3-block w3-text-white ms-expansion-panel-menu w3-hover-text-purple"
-                        [ngClass]="{'ms-button-selected': buttonOptions.reports.production}" routerLink="reports/production"
+                        [ngClass]="{'ms-button-selected': buttonOptions.reports.production}"
+                        routerLink="reports/production"
                         style="text-align:left;border-radius:0px 0px 0px 0px;padding-bottom:1em"
                         (click)="toggleSideMenu()" *ngIf="permits.reportsProductionButton">
                         <mat-icon style="vertical-align: middle; margin-right:0.2em;margin-left:1.5em">
@@ -565,8 +575,9 @@
 
                 </mat-expansion-panel>
                 <mat-expansion-panel style="width:15em; box-shadow:none; border-radius:0px 0px 0px 0px"
-                    class="w3-border-top w3-border-light-grey" [ngClass]="{'ms-expansion-panel-menu':configurationsOpenedFlag}"
-                    (opened)="configurationsOpened()" (closed)="configurationsClosed()">
+                    class="w3-border-top w3-border-light-grey"
+                    [ngClass]="{'ms-expansion-panel-menu':configurationsOpenedFlag}" (opened)="configurationsOpened()"
+                    (closed)="configurationsClosed()">
                     <mat-expansion-panel-header *ngIf="permits.configurationsSection">
                         <mat-panel-title style="font-weight:500"
                             [ngClass]="{'ms-expansion-panel-title':configurationsOpenedFlag}">
@@ -576,16 +587,17 @@
                     </mat-expansion-panel-header>
 
                     <button mat-button class="w3-block w3-text-white ms-expansion-panel-menu w3-hover-text-purple"
-                        [ngClass]="{'ms-button-selected': buttonOptions.configurations.accounts}" routerLink="configurations/accounts"
-                        style="text-align:left;border-radius:0px 0px 0px 0px" (click)="toggleSideMenu()"
-                        *ngIf="permits.configurationsAccountsButton">
+                        [ngClass]="{'ms-button-selected': buttonOptions.configurations.accounts}"
+                        routerLink="configurations/accounts" style="text-align:left;border-radius:0px 0px 0px 0px"
+                        (click)="toggleSideMenu()" *ngIf="permits.configurationsAccountsButton">
                         <mat-icon style="vertical-align: middle; margin-right:0.2em;margin-left:1.5em">
                             account_circle
                         </mat-icon> Cuentas
                     </button>
 
                     <button mat-button class="w3-block w3-text-white ms-expansion-panel-menu w3-hover-text-purple"
-                        [ngClass]="{'ms-button-selected': buttonOptions.configurations.permits}" routerLink="configurations/permits"
+                        [ngClass]="{'ms-button-selected': buttonOptions.configurations.permits}"
+                        routerLink="configurations/permits"
                         style="text-align:left;border-radius:0px 0px 0px 0px;padding-bottom:1em"
                         (click)="toggleSideMenu()" *ngIf="permits.configurationsPermitsButton">
                         <mat-icon style="vertical-align: middle; margin-right:0.2em;margin-left:1.5em">

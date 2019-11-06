@@ -7,6 +7,9 @@ import { startWith, map, tap } from 'rxjs/operators';
 import { Observable, Subscription } from 'rxjs';
 import { MatTableDataSource, MatPaginator } from '@angular/material';
 
+import * as XLSX from 'xlsx';
+import { DatePipe } from '@angular/common';
+
 @Component({
   selector: 'app-sales-history',
   templateUrl: './sales-history.component.html',
@@ -20,14 +23,12 @@ export class SalesHistoryComponent implements OnInit, OnDestroy {
   queryFormGroup: FormGroup;
 
   loading: boolean = false;
-
   totalSold: number = 0;
+  data_xls: any[] = [];
 
   filteredUsers: Observable<User[]>;
 
   displayedColumns: string[] = ['index', 'document', 'documentSerial', 'documentCorrelative', 'customer', 'product', 'price', 'createdBy'];
-
-
   dataSource = new MatTableDataSource();
 
   @ViewChild(MatPaginator, { static: true }) paginator: MatPaginator;
@@ -37,7 +38,8 @@ export class SalesHistoryComponent implements OnInit, OnDestroy {
   constructor(
     public dbs: DatabaseService,
     public auth: AuthService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    public datePipe: DatePipe
   ) { }
 
   ngOnInit() {
@@ -68,6 +70,7 @@ export class SalesHistoryComponent implements OnInit, OnDestroy {
         .subscribe(res => {
           if (res) {
             this.dataSource.data = res;
+            this.data_xls = res.map(element => element);
             this.loading = false;
           }
         });
@@ -114,8 +117,35 @@ export class SalesHistoryComponent implements OnInit, OnDestroy {
     }
   }
 
-  downloadCSV(): void {
-    // method to download a CSV file
+  downloadXlsx(): void {
+    let table_xlsx: any[] = [];
+
+    this.data_xls.forEach(element => {
+      const temp = {
+        'Fecha': this.datePipe.transform(element['regDate'], 'yyyy/MM/dd'),
+        'Hora': this.datePipe.transform(element['regDate'], 'hh:mm'),
+        'Doc. Nombre': element['document']['name'],
+        'Doc. Serie': element['documentSerial'],
+        'Doc. Correlativo': element['documentCorrelative'],
+        'Cliente': element['customer']['businessName'] ? element['customer']['businessName'] : element['customer']['name'] + (element['customer']['lastname'] ? (', ' + element['lastname']) : ''),
+        'Prod. Nombre': element['product'] ? element['product']['name'] : '---',
+        'Prod. Código': element['product'] ? element['product']['code'] : '---',
+        'Prod. Serie': element['product'] ? element['serie'] : '---',
+        'Precio': element['price'],
+        'Usuario': element['createdBy']
+      };
+      table_xlsx.push(temp);
+    })
+
+    /* generate worksheet */
+    const ws: XLSX.WorkSheet = XLSX.utils.json_to_sheet(table_xlsx);
+
+    /* generate workbook and add the worksheet */
+    const wb: XLSX.WorkBook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Historial de ventas');
+
+    /* save to file */
+    XLSX.writeFile(wb, 'Historial de ventas - ' + this.datePipe.transform(new Date(), 'yyyyMMdd-hhmmss') + '.xlsx');
   }
 
 
