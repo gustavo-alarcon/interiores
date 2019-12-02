@@ -95,7 +95,7 @@ export class RegisterDocumentsComponent implements OnInit {
     let toMonth = (fromDate.getMonth() + 1) % 12;
     let toYear = this.currentYear;
 
-    if (toMonth + 1 >= 13) {
+    if (fromDate.getMonth() +  1 >= 12) {
       toYear++;
     }
 
